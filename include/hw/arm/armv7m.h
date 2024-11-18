@@ -10,12 +10,12 @@
 #ifndef HW_ARM_ARMV7M_H
 #define HW_ARM_ARMV7M_H
 
-#include "hw/sysbus.h"
+#include "hw/clock.h"
 #include "hw/intc/armv7m_nvic.h"
 #include "hw/misc/armv7m_ras.h"
-#include "target/arm/idau.h"
+#include "hw/sysbus.h"
 #include "qom/object.h"
-#include "hw/clock.h"
+#include "target/arm/idau.h"
 
 #define TYPE_BITBAND "ARM-bitband-memory"
 OBJECT_DECLARE_SIMPLE_TYPE(BitBandState, BITBAND)
@@ -49,7 +49,8 @@ OBJECT_DECLARE_SIMPLE_TYPE(ARMv7MState, ARMV7M)
  *   devices will be automatically layered on top of this view.)
  * + Property "idau": IDAU interface (forwarded to CPU object)
  * + Property "init-svtor": secure VTOR reset value (forwarded to CPU object)
- * + Property "init-nsvtor": non-secure VTOR reset value (forwarded to CPU object)
+ * + Property "init-nsvtor": non-secure VTOR reset value (forwarded to CPU
+ * object)
  * + Property "vfp": enable VFP (forwarded to CPU object)
  * + Property "dsp": enable DSP (forwarded to CPU object)
  * + Property "enable-bitband": expose bitbanded IO
