@@ -51,8 +51,8 @@ static void NXPS32K3X8EVB_init(MachineState *machine) {
 
     // Finally we load the kernel image at address 0x400000 (beginning of flash
     // ram)
-    armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename, 0x400000,
-                       FLASH_SIZE);  // replace with CODE_FLASH_SIZE
+    armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename,
+                       CODE_FLASH_BASE_ADDRESS, CODE_FLASH_BLOCK_SIZE * 4);
 }
 
 // Generic Objectc is passed by QEMU

@@ -78,17 +78,66 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     clock_set_source(s->refclk, s->sysclk);
 
     /*
-     * Init flash region
-     * Flash starts at 0x08000000 and then is aliased to boot memory at 0x0
+     * Init code flash region
      */
-    memory_region_init_rom(&s->flash, OBJECT(dev_soc), "NXPS32K358.flash",
-                           FLASH_SIZE, &error_fatal);
-    memory_region_add_subregion(system_memory, FLASH_BASE_ADDRESS, &s->flash);
+    memory_region_init_rom(&s->code_flash_0, OBJECT(dev_soc),
+                           "NXPS32K358.code_flash_0", CODE_FLASH_BLOCK_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, CODE_FLASH_BASE_ADDRESS,
+                                &s->code_flash_0);
+
+    memory_region_init_rom(&s->code_flash_1, OBJECT(dev_soc),
+                           "NXPS32K358.code_flash_1", CODE_FLASH_BLOCK_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory,
+                                CODE_FLASH_BASE_ADDRESS + CODE_FLASH_BLOCK_SIZE,
+                                &s->code_flash_1);
+
+    memory_region_init_rom(&s->code_flash_2, OBJECT(dev_soc),
+                           "NXPS32K358.code_flash_2", CODE_FLASH_BLOCK_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(
+        system_memory, CODE_FLASH_BASE_ADDRESS + 2 * CODE_FLASH_BLOCK_SIZE,
+        &s->code_flash_2);
+
+    memory_region_init_rom(&s->code_flash_3, OBJECT(dev_soc),
+                           "NXPS32K358.code_flash_3", CODE_FLASH_BLOCK_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(
+        system_memory, CODE_FLASH_BASE_ADDRESS + 3 * CODE_FLASH_BLOCK_SIZE,
+        &s->code_flash_3);
+
+    /* Init data flash region */
+    memory_region_init_rom(&s->data_flash, OBJECT(dev_soc),
+                           "NXPS32K358.data_flash", DATA_FLASH_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, DATA_FLASH_BASE_ADDRESS,
+                                &s->data_flash);
 
     /* Init SRAM region */
-    memory_region_init_ram(&s->sram, NULL, "NXPS32K358.sram", SRAM_SIZE,
+    memory_region_init_ram(&s->sram_0, NULL, "NXPS32K358.sram_0",
+                           SRAM_BLOCK_SIZE, &error_fatal);
+    memory_region_add_subregion(system_memory, SRAM_BASE_ADDRESS, &s->sram_0);
+
+    memory_region_init_ram(&s->sram_1, NULL, "NXPS32K358.sram_1",
+                           SRAM_BLOCK_SIZE, &error_fatal);
+    memory_region_add_subregion(
+        system_memory, SRAM_BASE_ADDRESS + SRAM_BLOCK_SIZE, &s->sram_1);
+
+    memory_region_init_ram(&s->sram_2, NULL, "NXPS32K358.sram_2",
+                           SRAM_BLOCK_SIZE, &error_fatal);
+    memory_region_add_subregion(
+        system_memory, SRAM_BASE_ADDRESS + 2 * SRAM_BLOCK_SIZE, &s->sram_2);
+
+    /* Init DTCM */
+    memory_region_init_ram(&s->dtcm, NULL, "NXPS32K358.dtcm", DTCM_SIZE,
                            &error_fatal);
-    memory_region_add_subregion(system_memory, SRAM_BASE_ADDRESS, &s->sram);
+    memory_region_add_subregion(system_memory, DTCM_BASE_ADDRESS, &s->dtcm);
+
+    /* Init ITCM */
+    memory_region_init_ram(&s->dtcm, NULL, "NXPS32K358.itcm", ITCM_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);
@@ -98,8 +147,8 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                         4);  // 16 priority levels = 4 bits
     qdev_prop_set_string(armv7m, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m7"));
     qdev_prop_set_bit(armv7m, "enable-bitband", true);
-    qdev_prop_set_uint32(armv7m, "init-svtor", FLASH_BASE_ADDRESS);
-    qdev_prop_set_uint32(armv7m, "init-nsvtor", FLASH_BASE_ADDRESS);
+    qdev_prop_set_uint32(armv7m, "init-svtor", CODE_FLASH_BASE_ADDRESS);
+    qdev_prop_set_uint32(armv7m, "init-nsvtor", CODE_FLASH_BASE_ADDRESS);
     qdev_connect_clock_in(armv7m, "cpuclk", s->sysclk);
     qdev_connect_clock_in(armv7m, "refclk", s->refclk);
     object_property_set_link(OBJECT(&s->armv7m), "memory",

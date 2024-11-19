@@ -32,18 +32,35 @@
 #define TYPE_NXPS32K358_SOC "nxps32k358-soc"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 
-#define FLASH_BASE_ADDRESS 0x00400000
-#define FLASH_SIZE (8 * 1024 * 1024)  // Add DATA memory and UTEST
+#define CODE_FLASH_BASE_ADDRESS 0x00400000
+#define CODE_FLASH_BLOCK_SIZE (2 * 1024 * 1024)
+#define DATA_FLASH_BASE_ADDRESS 0x10000000
+#define DATA_FLASH_SIZE (128 * 1024)
 #define SRAM_BASE_ADDRESS 0x20400000
-#define SRAM_SIZE (256 * 3 * 1024)
+#define SRAM_BLOCK_SIZE (256 * 1024)
+#define DTCM_BASE_ADDRESS 0x20000000
+#define DTCM_SIZE (128 * 1024)
+#define ITCM_BASE_ADDRESS 0x00000000
+#define ITCM_SIZE (64 * 1024)
 
 struct NXPS32K358State {
     SysBusDevice parent_obj;
 
     ARMv7MState armv7m;
 
-    MemoryRegion sram;
-    MemoryRegion flash;
+    MemoryRegion code_flash_0;
+    MemoryRegion code_flash_1;
+    MemoryRegion code_flash_2;
+    MemoryRegion code_flash_3;
+
+    MemoryRegion data_flash;
+
+    MemoryRegion sram_0;
+    MemoryRegion sram_1;
+    MemoryRegion sram_2;
+
+    MemoryRegion dtcm;
+    MemoryRegion itcm;
 
     Clock *sysclk;
     Clock *refclk;
