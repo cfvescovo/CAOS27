@@ -23,21 +23,20 @@
  * THE SOFTWARE.
  */
 
-#include "hw/arm/nxps32k358_soc.h"
-
-#include "exec/address-spaces.h"
-#include "hw/arm/boot.h"
-#include "hw/misc/unimp.h"
-#include "hw/qdev-clock.h"
-#include "hw/qdev-properties.h"
+#include "qemu/osdep.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
-#include "qemu/osdep.h"
+#include "hw/arm/boot.h"
+#include "exec/address-spaces.h"
+#include "hw/arm/nxps32k358_soc.h"
+#include "hw/qdev-properties.h"
+#include "hw/qdev-clock.h"
+#include "hw/misc/unimp.h"
 #include "sysemu/sysemu.h"
 
 static void nxps32k358_soc_initfn(Object *obj) {
     NXPS32K358State *s = NXPS32K358_SOC(obj);
-    int i;
+    // int i;
 
     object_initialize_child(obj, "armv7m", &s->armv7m, TYPE_ARMV7M);
 
@@ -47,9 +46,10 @@ static void nxps32k358_soc_initfn(Object *obj) {
 
 static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     NXPS32K358State *s = NXPS32K358_SOC(dev_soc);
-    DeviceState *dev, *armv7m;
-    SysBusDevice *busdev;
-    int i;
+    DeviceState *armv7m;
+    // DeviceState *dev;
+    // SysBusDevice *busdev;
+    // int i;
 
     MemoryRegion *system_memory = get_system_memory();
 
@@ -97,7 +97,9 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     qdev_prop_set_uint8(armv7m, "num-prio-bits",
                         4);  // 16 priority levels = 4 bits
     qdev_prop_set_string(armv7m, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m7"));
-    // qdev_prop_set_bit(armv7m, "enable-bitband", true);
+    qdev_prop_set_bit(armv7m, "enable-bitband", true);
+    qdev_prop_set_uint32(armv7m, "init-svtor", FLASH_BASE_ADDRESS);
+    qdev_prop_set_uint32(armv7m, "init-nsvtor", FLASH_BASE_ADDRESS);
     qdev_connect_clock_in(armv7m, "cpuclk", s->sysclk);
     qdev_connect_clock_in(armv7m, "refclk", s->refclk);
     object_property_set_link(OBJECT(&s->armv7m), "memory",

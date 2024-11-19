@@ -50,4 +50,6 @@ struct NXPS32K358State {
     // Should we add other clocks?
 };
 
+typedef struct NXPS32K358State NXPS32K358State;
+
 #endif

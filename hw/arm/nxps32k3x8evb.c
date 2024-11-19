@@ -1,66 +1,93 @@
-/*
- * NXP S32K3X8EVB machine
- *
- * Copyright (c) 2021 Alexandre Iooss <erdnaxe@crans.org>
- * Copyright (c) 2014 Alistair Francis <alistair@alistair23.me>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-#include "hw/arm/boot.h"
-#include "hw/arm/nxps32k358_soc.h"
-#include "hw/boards.h"
-#include "hw/qdev-clock.h"
-#include "hw/qdev-properties.h"
-#include "qapi/error.h"
-#include "qemu/error-report.h"
 #include "qemu/osdep.h"
+#include "qemu/units.h"
+#include "qapi/error.h"
+#include "hw/arm/boot.h"
+#include "hw/arm/armv7m.h"
+#include "qom/object.h"
+#include "hw/boards.h"
+#include "hw/arm/nxps32k358_soc.h"
+#include "hw/qdev-clock.h"
 
-/* stm32vldiscovery implementation is derived from netduinoplus2 */
-
-/* Main SYSCLK frequency in Hz (240MHz) */
 #define SYSCLK_FRQ 240000000ULL
 
-static void nxps32k3x8evb_init(MachineState *machine) {
-    DeviceState *dev;
+struct NXPS32K3X8EVBMachineState {
+    MachineState parent_obj;
+    NXPS32K358State s32k;
+
     Clock *sysclk;
+};
+typedef struct NXPS32K3X8EVBMachineState NXPS32K3X8EVBMachineState;
 
-    /* This clock doesn't need migration because it is fixed-frequency */
-    sysclk = clock_new(OBJECT(machine), "SYSCLK");
-    clock_set_hz(sysclk, SYSCLK_FRQ);
+struct NXPS32K3X8EVBMachineClass {
+    MachineClass parent_class;
+};
+typedef struct NXPS32K3X8EVBMachineClass NXPS32K3X8EVBMachineClass;
 
-    dev = qdev_new(TYPE_NXPS32K358_SOC);
-    object_property_add_child(OBJECT(machine), "soc", OBJECT(dev));
-    qdev_connect_clock_in(dev, "sysclk", sysclk);
-    sysbus_realize_and_unref(SYS_BUS_DEVICE(dev), &error_fatal);
+#define TYPE_NXPS32K3X8EVB_MACHINE MACHINE_TYPE_NAME("nxps32k3x8evb")
 
-    armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename, 0,
-                       FLASH_SIZE);
+DECLARE_OBJ_CHECKERS(NXPS32K3X8EVBMachineState, NXPS32K3X8EVBMachineClass,
+                     NXPS32K3X8EVB_MACHINE, TYPE_NXPS32K3X8EVB_MACHINE)
+
+// Here we initialize the board
+// The generic MachineState is passed by QEMU
+static void NXPS32K3X8EVB_init(MachineState *machine) {
+    // Cast the NXP machine from the generic machine
+    NXPS32K3X8EVBMachineState *m_state = NXPS32K3X8EVB_MACHINE(machine);
+
+    // Initialize system clock
+    m_state->sysclk = clock_new(OBJECT(machine), "SYSCLK");
+
+    // Initialize the SoC
+    object_initialize_child(OBJECT(machine), "s32k", &m_state->s32k,
+                            TYPE_NXPS32K358_SOC);
+
+    DeviceState *soc_state = DEVICE(&m_state->s32k);
+    // We link the machine sysclk to SoC sysclk
+    clock_set_hz(m_state->sysclk, SYSCLK_FRQ);
+    qdev_connect_clock_in(soc_state, "sysclk", m_state->sysclk);
+
+    // And we connect it via QEMU's SYSBUS.
+    sysbus_realize(SYS_BUS_DEVICE(&m_state->s32k), &error_abort);
+
+    // Finally we load the kernel image at address 0x400000 (beginning of flash
+    // ram)
+    armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename, 0x400000,
+                       FLASH_SIZE);  // replace with CODE_FLASH_SIZE
 }
 
-static void nxps32k3x8evb_machine_init(MachineClass *mc) {
+// Generic Objectc is passed by QEMU
+static void NXPS32K3X8EVB_class_init(ObjectClass *oc, void *data) {
+    // The generic machine class from object
+    MachineClass *mc = MACHINE_CLASS(oc);
+    mc->desc = "S32K3X8EVB-Q289 board";
+
     static const char *const valid_cpu_types[] = {
         ARM_CPU_TYPE_NAME("cortex-m7"), NULL};
 
-    mc->desc = "NXP S32K3X8EVB (Cortex-M7)";
-    mc->init = nxps32k3x8evb_init;
+    // Notice that we tell QEMU what function is used to initialize our board
+    // here.
+    mc->init = NXPS32K3X8EVB_init;
+    // Define CPU attributes
+    mc->default_cpus = 1;
+    mc->default_cpu_type = ARM_CPU_TYPE_NAME("cortex-m7");
     mc->valid_cpu_types = valid_cpu_types;
+    mc->min_cpus = mc->default_cpus;
+    mc->max_cpus = mc->default_cpus;
+    // Our board does not have any media drive
+    mc->no_floppy = 1;
+    mc->no_cdrom = 1;
+    // We also will not have threads
+    mc->no_parallel = 1;
 }
 
-DEFINE_MACHINE("nxps32k3x8evb", nxps32k3x8evb_machine_init)
+static const TypeInfo NXPS32K3X8EVB_machine_types[] = {{
+    // Notice that this is the TYPE that we defined above.
+    .name = TYPE_NXPS32K3X8EVB_MACHINE,
+    // Our machine is a direct child of QEMU generic machine
+    .parent = TYPE_MACHINE,
+    .instance_size = sizeof(NXPS32K3X8EVBMachineState),
+    .class_size = sizeof(NXPS32K3X8EVBMachineClass),
+    // We need to registers the class inti function
+    .class_init = NXPS32K3X8EVB_class_init,
+}};
+DEFINE_TYPES(NXPS32K3X8EVB_machine_types)
