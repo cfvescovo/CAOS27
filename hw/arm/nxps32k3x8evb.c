@@ -36,26 +36,21 @@ static void NXPS32K3X8EVB_init(MachineState *machine) {
 
     // Initialize system clock
     m_state->sysclk = clock_new(OBJECT(machine), "SYSCLK");
+    clock_set_hz(m_state->sysclk, SYSCLK_FRQ);
 
     // Initialize the SoC
     object_initialize_child(OBJECT(machine), "s32k", &m_state->s32k,
                             TYPE_NXPS32K358_SOC);
-
     DeviceState *soc_state = DEVICE(&m_state->s32k);
-    // We link the machine sysclk to SoC sysclk
-    clock_set_hz(m_state->sysclk, SYSCLK_FRQ);
     qdev_connect_clock_in(soc_state, "sysclk", m_state->sysclk);
-
-    // And we connect it via QEMU's SYSBUS.
     sysbus_realize(SYS_BUS_DEVICE(&m_state->s32k), &error_abort);
 
-    // Finally we load the kernel image at address 0x400000 (beginning of flash
-    // ram)
+    // Load kernel image
     armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename,
                        CODE_FLASH_BASE_ADDRESS, CODE_FLASH_BLOCK_SIZE * 4);
 }
 
-// Generic Objectc is passed by QEMU
+// Generic Object is passed by QEMU
 static void NXPS32K3X8EVB_class_init(ObjectClass *oc, void *data) {
     // The generic machine class from object
     MachineClass *mc = MACHINE_CLASS(oc);
