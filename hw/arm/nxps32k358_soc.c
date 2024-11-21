@@ -135,7 +135,7 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     memory_region_add_subregion(system_memory, DTCM_BASE_ADDRESS, &s->dtcm);
 
     /* Init ITCM */
-    memory_region_init_ram(&s->dtcm, NULL, "NXPS32K358.itcm", ITCM_SIZE,
+    memory_region_init_ram(&s->itcm, NULL, "NXPS32K358.itcm", ITCM_SIZE,
                            &error_fatal);
     memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
