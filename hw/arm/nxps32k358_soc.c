@@ -139,6 +139,11 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                            &error_fatal);
     memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
+    /* Init MC_RGM */
+    memory_region_init_ram(&s->mc_rgm, NULL, "NXPS32K358.mc_rgm", MC_RGM_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, MC_RGM_BASE_ADDRESS, &s->mc_rgm);
+
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);
     qdev_prop_set_uint32(armv7m, "num-irq",

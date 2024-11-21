@@ -42,6 +42,9 @@ OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 #define DTCM_SIZE (128 * 1024)
 #define ITCM_BASE_ADDRESS 0x00000000
 #define ITCM_SIZE (64 * 1024)
+#define MC_RGM_BASE_ADDRESS 0x4028C000
+// 9 registers four bytes each
+#define MC_RGM_SIZE (9 * 4)
 
 struct NXPS32K358State {
     SysBusDevice parent_obj;
@@ -61,6 +64,8 @@ struct NXPS32K358State {
 
     MemoryRegion dtcm;
     MemoryRegion itcm;
+
+    MemoryRegion mc_rgm;
 
     Clock *sysclk;
     Clock *refclk;
