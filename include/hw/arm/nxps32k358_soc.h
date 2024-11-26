@@ -45,6 +45,10 @@ OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 #define MC_RGM_BASE_ADDRESS 0x4028C000
 // 9 registers four bytes each
 #define MC_RGM_SIZE (9 * 4)
+#define MSCM_BASE_ADDRESS 0x40260000
+#define MSCM_SIZE 0xA5E
+#define PPB_BASE_ADDRESS 0xE0000000
+#define PPB_SIZE 0x000FFFFF
 
 struct NXPS32K358State {
     SysBusDevice parent_obj;
@@ -65,7 +69,10 @@ struct NXPS32K358State {
     MemoryRegion dtcm;
     MemoryRegion itcm;
 
-    MemoryRegion mc_rgm;
+    /*     MemoryRegion mc_rgm;
+        MemoryRegion mscm;
+        MemoryRegion ppb; */
+    MemoryRegion tmp;
 
     Clock *sysclk;
     Clock *refclk;

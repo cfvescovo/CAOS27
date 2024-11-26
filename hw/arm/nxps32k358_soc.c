@@ -139,10 +139,25 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                            &error_fatal);
     memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
-    /* Init MC_RGM */
-    memory_region_init_ram(&s->mc_rgm, NULL, "NXPS32K358.mc_rgm", MC_RGM_SIZE,
+    /*  Init MC_RGM
+        memory_region_init_ram(&s->mc_rgm, NULL, "NXPS32K358.mc_rgm",
+        MC_RGM_SIZE, &error_fatal); memory_region_add_subregion(system_memory,
+        MC_RGM_BASE_ADDRESS, &s->mc_rgm); */
+
+    /* Map MCME_PRTN1_COFB0_STAT */
+    memory_region_init_ram(&s->tmp, NULL, "NXPS32K358.MCME_PRTN1_COFB0_STAT", 4,
                            &error_fatal);
-    memory_region_add_subregion(system_memory, MC_RGM_BASE_ADDRESS, &s->mc_rgm);
+    memory_region_add_subregion(system_memory, 0x402DC310, &s->tmp);
+    int test = 0x1000000;
+    cpu_physical_memory_rw(0x402DC310, &test, sizeof(test), 1);
+
+    /* memory_region_init_ram(&s->mscm, NULL, "NXPS32K358.MSCM", MSCM_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, MSCM_BASE_ADDRESS, &s->mscm);
+
+    memory_region_init_ram(&s->ppb, NULL, "NXPS32K358.PPB", PPB_SIZE,
+                           &error_fatal);
+    memory_region_add_subregion(system_memory, PPB_BASE_ADDRESS, &s->ppb); */    
 
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);
@@ -152,8 +167,10 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                         4);  // 16 priority levels = 4 bits
     qdev_prop_set_string(armv7m, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m7"));
     qdev_prop_set_bit(armv7m, "enable-bitband", true);
-    qdev_prop_set_uint32(armv7m, "init-svtor", CODE_FLASH_BASE_ADDRESS);
-    qdev_prop_set_uint32(armv7m, "init-nsvtor", CODE_FLASH_BASE_ADDRESS);
+    // We want to "skip" the boot header as the startup code is located at
+    // CODE_FLASH_BASE_ADDRESS + boot_header with 2048 alignment
+    qdev_prop_set_uint32(armv7m, "init-svtor", CODE_FLASH_BASE_ADDRESS + 2048);
+    qdev_prop_set_uint32(armv7m, "init-nsvtor", CODE_FLASH_BASE_ADDRESS + 2048);
     qdev_connect_clock_in(armv7m, "cpuclk", s->sysclk);
     qdev_connect_clock_in(armv7m, "refclk", s->refclk);
     object_property_set_link(OBJECT(&s->armv7m), "memory",
@@ -161,6 +178,7 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     if (!sysbus_realize(SYS_BUS_DEVICE(&s->armv7m), errp)) {
         return;
     }
+    create_unimplemented_device("DUMMY", 0x0, 0xFFFFFFFF);
 
     // TODO: create unimplemented devices to map to memory regions for FreeRTOS
 }
