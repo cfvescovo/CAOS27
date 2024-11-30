@@ -139,25 +139,12 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                            &error_fatal);
     memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
-    /*  Init MC_RGM
-        memory_region_init_ram(&s->mc_rgm, NULL, "NXPS32K358.mc_rgm",
-        MC_RGM_SIZE, &error_fatal); memory_region_add_subregion(system_memory,
-        MC_RGM_BASE_ADDRESS, &s->mc_rgm); */
-
     /* Map MCME_PRTN1_COFB0_STAT */
     memory_region_init_ram(&s->tmp, NULL, "NXPS32K358.MCME_PRTN1_COFB0_STAT", 4,
                            &error_fatal);
     memory_region_add_subregion(system_memory, 0x402DC310, &s->tmp);
     int test = 0x1000000;
     cpu_physical_memory_rw(0x402DC310, &test, sizeof(test), 1);
-
-    /* memory_region_init_ram(&s->mscm, NULL, "NXPS32K358.MSCM", MSCM_SIZE,
-                           &error_fatal);
-    memory_region_add_subregion(system_memory, MSCM_BASE_ADDRESS, &s->mscm);
-
-    memory_region_init_ram(&s->ppb, NULL, "NXPS32K358.PPB", PPB_SIZE,
-                           &error_fatal);
-    memory_region_add_subregion(system_memory, PPB_BASE_ADDRESS, &s->ppb); */    
 
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);
@@ -178,6 +165,19 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     if (!sysbus_realize(SYS_BUS_DEVICE(&s->armv7m), errp)) {
         return;
     }
+
+    /* Attach UART (uses USART registers) and USART controllers */
+    /* for (i = 0; i < STM_NUM_USARTS; i++) {
+        dev = DEVICE(&(s->usart[i]));
+        qdev_prop_set_chr(dev, "chardev", serial_hd(i));
+        if (!sysbus_realize(SYS_BUS_DEVICE(&s->usart[i]), errp)) {
+            return;
+        }
+        busdev = SYS_BUS_DEVICE(dev);
+        sysbus_mmio_map(busdev, 0, usart_addr[i]);
+        sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, usart_irq[i]));
+    } */
+
     create_unimplemented_device("DUMMY", 0x0, 0xFFFFFFFF);
 
     // TODO: create unimplemented devices to map to memory regions for FreeRTOS
