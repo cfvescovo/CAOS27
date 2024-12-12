@@ -28,6 +28,7 @@
 #include "hw/arm/armv7m.h"
 #include "hw/clock.h"
 #include "qom/object.h"
+#include "hw/char/nxps32k358_lpuart.h"
 
 #define TYPE_NXPS32K358_SOC "nxps32k358-soc"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
@@ -39,7 +40,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 #define SRAM_BASE_ADDRESS 0x20400000
 #define SRAM_BLOCK_SIZE (256 * 1024)
 #define DTCM_BASE_ADDRESS 0x20000000
-#define DTCM_SIZE (128 * 1024)
+#define DTCM_SIZE (128 * 1024) + 1
 #define ITCM_BASE_ADDRESS 0x00000000
 #define ITCM_SIZE (64 * 1024)
 
@@ -64,9 +65,10 @@ struct NXPS32K358State {
 
     MemoryRegion tmp;
 
+    NXPS32K35LPUartState lpuart[NUM_LPUARTS];
+
     Clock *sysclk;
     Clock *refclk;
-    // Should we add other clocks?
 };
 
 typedef struct NXPS32K358State NXPS32K358State;

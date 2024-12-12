@@ -246,6 +246,7 @@ config NXPS32K3X8EVB
     default y
     depends on TCG && ARM
     select NXPS32K358_SOC
+    select NXPS32K358_LPUART
 
 config STRONGARM
     bool

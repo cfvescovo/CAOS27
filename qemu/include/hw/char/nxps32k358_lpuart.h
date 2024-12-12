@@ -29,6 +29,8 @@
 #include "chardev/char-fe.h"
 #include "qom/object.h"
 
+#define LPUART_ADDR(n) (0x40328000 + 0x4000 * (n))
+
 #define LPUART_VERID 0x00
 #define LPUART_PARAM 0x04
 #define LPUART_GLOBAL 0x08
@@ -95,15 +97,13 @@ The reset value for the LPUART_VERID register is 0x04040007 for
 #define LPUART_STAT_RAF (1 << 24)
 #define LPUART_CONTROL_RE (1 << 18)
 
-#define USART_SR_TXE (1 << 7)
-#define USART_SR_TC (1 << 6)
-#define USART_SR_RXNE (1 << 5)
-#define USART_CR1_UE (1 << 13)
-#define USART_CR1_TXEIE (1 << 7)
-#define USART_CR1_TCEIE (1 << 6)
-#define USART_CR1_RXNEIE (1 << 5)
-#define USART_CR1_TE (1 << 3)
-#define USART_CR1_RE (1 << 2)
+#define LPUART_SR_TIE (1 << 23)
+#define LPUART_SR_TCIE (1 << 22)
+#define LPUART_SR_RIE (1 << 21)
+
+#define NUM_LPUARTS 16
+
+#define LPUART_IRQ(n) (141 + n)
 
 #define TYPE_NXPS32K358_LPUART "nxps32k358-lpuart"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K35LPUartState, NXPS32K358_LPUART)
@@ -142,7 +142,9 @@ struct NXPS32K35LPUartState {
     uint32_t lpuart_tcb[LPUART_TCBR_NUM];
     uint32_t lpuart_tdb[LPUART_TDBR_NUM];
 
+    Clock *clk;
     CharBackend chr;
     qemu_irq irq;
 };
+
 #endif

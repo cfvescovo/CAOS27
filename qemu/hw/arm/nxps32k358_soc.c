@@ -29,6 +29,7 @@
 #include "hw/arm/boot.h"
 #include "exec/address-spaces.h"
 #include "hw/arm/nxps32k358_soc.h"
+#include "hw/char/nxps32k358_lpuart.h"
 #include "hw/qdev-properties.h"
 #include "hw/qdev-clock.h"
 #include "hw/misc/unimp.h"
@@ -42,14 +43,17 @@ static void nxps32k358_soc_initfn(Object *obj) {
 
     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
     s->refclk = qdev_init_clock_in(DEVICE(s), "refclk", NULL, NULL, 0);
+    for (int i = 0; i < NUM_LPUARTS; i++) {
+        object_initialize_child(obj, "lpuart[*]", &s->lpuart[i],
+                                TYPE_NXPS32K358_LPUART);
+    }
 }
 
 static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     NXPS32K358State *s = NXPS32K358_SOC(dev_soc);
     DeviceState *armv7m;
-    // DeviceState *dev;
-    // SysBusDevice *busdev;
-    // int i;
+    DeviceState *dev;
+    SysBusDevice *busdev;
 
     MemoryRegion *system_memory = get_system_memory();
 
@@ -76,6 +80,8 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     /* The refclk always runs at frequency HCLK / 8 */
     clock_set_mul_div(s->refclk, 8, 1);
     clock_set_source(s->refclk, s->sysclk);
+
+    create_unimplemented_device("DUMMY", 0x0, 0xFFFFFFFF);
 
     /*
      * Init code flash region
@@ -127,7 +133,7 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     memory_region_init_ram(&s->sram_2, NULL, "NXPS32K358.sram_2",
                            SRAM_BLOCK_SIZE, &error_fatal);
     memory_region_add_subregion(
-        system_memory, SRAM_BASE_ADDRESS + 2 * SRAM_BLOCK_SIZE, &s->sram_2);
+        system_memory, (SRAM_BASE_ADDRESS + (2 * SRAM_BLOCK_SIZE)), &s->sram_2);
 
     /* Init DTCM */
     memory_region_init_ram(&s->dtcm, NULL, "NXPS32K358.dtcm", DTCM_SIZE,
@@ -167,20 +173,17 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     }
 
     /* Attach UART (uses USART registers) and USART controllers */
-    /* for (i = 0; i < STM_NUM_USARTS; i++) {
-        dev = DEVICE(&(s->usart[i]));
+    for (int i = 0; i < NUM_LPUARTS; i++) {
+        dev = DEVICE(&(s->lpuart[i]));
         qdev_prop_set_chr(dev, "chardev", serial_hd(i));
-        if (!sysbus_realize(SYS_BUS_DEVICE(&s->usart[i]), errp)) {
+        qdev_connect_clock_in(dev, "clk", s->refclk);
+        if (!sysbus_realize(SYS_BUS_DEVICE(&s->lpuart[i]), errp)) {
             return;
         }
         busdev = SYS_BUS_DEVICE(dev);
-        sysbus_mmio_map(busdev, 0, usart_addr[i]);
-        sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, usart_irq[i]));
-    } */
-
-    create_unimplemented_device("DUMMY", 0x0, 0xFFFFFFFF);
-
-    // TODO: create unimplemented devices to map to memory regions for FreeRTOS
+        sysbus_mmio_map(busdev, 0, LPUART_ADDR(i));
+        sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, LPUART_IRQ(i)));
+    }
 }
 
 static void nxps32k358_soc_class_init(ObjectClass *klass, void *data) {
