@@ -1,1 +1,5 @@
 *.elf
+*.o
+*.d
+.gdb_history
+Debug_FLASH/
