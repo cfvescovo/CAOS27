@@ -140,9 +140,10 @@ static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
     DB_PRINT("Read 0x%" HWADDR_PRIx "\n", addr);
 
     switch (addr) {
+        case LPUART_VERID:
+            return s->lpuart_verid;
         case LPUART_STAT:
             retvalue = s->lpuart_stat;
-            qemu_chr_fe_accept_input(&s->chr);
             return retvalue;
         case LPUART_DATA:
             DB_PRINT("Value: 0x%" PRIx32 ", %c\n", s->lpuart_data,

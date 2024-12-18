@@ -115,6 +115,8 @@ int main(void)
     volatile Std_ReturnType T_Uart_Status1;
     volatile Std_ReturnType T_Uart_Status2;
 
+    uint8 recvBuf[50];
+
 #ifndef VIRT_ENV
     /* Initialize the Mcu driver */
     Mcu_Init(NULL_PTR);
@@ -142,11 +144,16 @@ int main(void)
     /* Initializes an UART driver*/
     Uart_Init(NULL_PTR);
 
+    Uart_SyncSend(UART_LPUART_INTERNAL_CHANNEL,(const uint8 *)WELCOME_MSG_1, strlen(WELCOME_MSG_1), (uint32)0xFFFFFFFF);
+
+    Uart_SyncReceive(UART_LPUART_INTERNAL_CHANNEL, recvBuf, 50, (uint32)0xFFFFFFFF);
+
+    Uart_SyncSend(UART_LPUART_INTERNAL_CHANNEL,(const uint8 *)recvBuf, 50, (uint32)0xFFFFFFFF);
     /* Send greeting string 1 from Flexio_0_Tx to Lpuart_3 */
-    T_Uart_Status1 = Send_Data(UART_FLEXIO_TX_CHANNEL, UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)WELCOME_MSG_1, strlen(WELCOME_MSG_1));
+    //T_Uart_Status1 = Send_Data(NULL, UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)WELCOME_MSG_1, strlen(WELCOME_MSG_1));
 
     /* Send greeting string 2 from Lpuart_3 to Flexio_1_Rx */
-    T_Uart_Status2 = Send_Data(UART_LPUART_INTERNAL_CHANNEL, UART_FLEXIO_RX_CHANNEL, (const uint8 *)WELCOME_MSG_2, strlen(WELCOME_MSG_2));
+    //T_Uart_Status2 = Send_Data(UART_LPUART_INTERNAL_CHANNEL, UART_FLEXIO_RX_CHANNEL, (const uint8 *)WELCOME_MSG_2, strlen(WELCOME_MSG_2));
 
     Uart_Deinit();
 
