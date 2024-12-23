@@ -49,11 +49,11 @@
 static int nxps32k358_lpuart_can_receive(void *opaque) {
     NXPS32K35LPUartState *s = opaque;
 
-    if (s->lpuart_stat & LPUART_STAT_RAF) {
-        return 1;
+    if (s->lpuart_stat & LPUART_STAT_RDRF) {
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 static void nxps32k358_update_irq(NXPS32K35LPUartState *s) {
@@ -76,9 +76,9 @@ static void nxps32k358_lpuart_receive(void *opaque, const uint8_t *buf,
         return;
     }
 
-    s->lpuart_stat |= LPUART_STAT_RAF;
-
     s->lpuart_data = *buf;
+
+    s->lpuart_stat |= LPUART_STAT_RDRF;
 
     nxps32k358_update_irq(s);
 
@@ -148,8 +148,8 @@ static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
         case LPUART_DATA:
             DB_PRINT("Value: 0x%" PRIx32 ", %c\n", s->lpuart_data,
                      (char)s->lpuart_data);
-            retvalue = s->lpuart_data & 0xFF;
-            s->lpuart_stat &= LPUART_SR_RIE;
+            retvalue = s->lpuart_data;
+            s->lpuart_stat &= ~LPUART_STAT_RDRF;
             qemu_chr_fe_accept_input(&s->chr);
             nxps32k358_update_irq(s);
             return retvalue;
@@ -180,7 +180,10 @@ static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
             nxps32k358_update_irq(s);
             return;
         case LPUART_DATA:
-            if (value < 0xF00) {
+            if (!(s->lpuart_control & LPUART_CONTROL_M)) {
+                if (s->lpuart_control & LPUART_CONTROL_M7) {
+                    value = value & 0x7F;
+                }
                 ch = value;
                 /* XXX this blocks entire thread. Rewrite to use
                  * qemu_chr_fe_write and background I/O callbacks */
@@ -192,6 +195,10 @@ static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
                    on each write. */
                 s->lpuart_stat |= LPUART_SR_TCIE;
                 nxps32k358_update_irq(s);
+            } else {
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "%s: 9-bit data format not supported\n",
+                              __func__);
             }
             return;
         case LPUART_CONTROL:

@@ -146,9 +146,9 @@ int main(void)
 
     Uart_SyncSend(UART_LPUART_INTERNAL_CHANNEL,(const uint8 *)WELCOME_MSG_1, strlen(WELCOME_MSG_1), (uint32)0xFFFFFFFF);
 
-    Uart_SyncReceive(UART_LPUART_INTERNAL_CHANNEL, recvBuf, 50, (uint32)0xFFFFFFFF);
+    Uart_SyncReceive(UART_LPUART_INTERNAL_CHANNEL, recvBuf, 4, (uint32)0xFFFFFFFF);
 
-    Uart_SyncSend(UART_LPUART_INTERNAL_CHANNEL,(const uint8 *)recvBuf, 50, (uint32)0xFFFFFFFF);
+    Uart_SyncSend(UART_LPUART_INTERNAL_CHANNEL,(const uint8 *)recvBuf, 4, (uint32)0xFFFFFFFF);
     /* Send greeting string 1 from Flexio_0_Tx to Lpuart_3 */
     //T_Uart_Status1 = Send_Data(NULL, UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)WELCOME_MSG_1, strlen(WELCOME_MSG_1));
 

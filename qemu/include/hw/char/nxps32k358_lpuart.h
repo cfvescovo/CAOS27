@@ -94,8 +94,14 @@ The reset value for the LPUART_VERID register is 0x04040007 for
 #define LPUART_TCB_RESET 0x00000000
 #define LPUART_TDB_RESET 0x00000000
 
-#define LPUART_STAT_RAF (1 << 24)
+// Receiver Data Full Flag
+#define LPUART_STAT_RDRF (1 << 21)
+
 #define LPUART_CONTROL_RE (1 << 18)
+// M7 = 1 for 7-bit data format, M7 = 0 for 8-bit data format
+#define LPUART_CONTROL_M7 (1 << 11)
+// M = 0 for 8-bit data format, M = 1 for 9-bit data format
+#define LPUART_CONTROL_M (1 << 4)
 
 #define LPUART_SR_TIE (1 << 23)
 #define LPUART_SR_TCIE (1 << 22)
