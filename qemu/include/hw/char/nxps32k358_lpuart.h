@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef HW_NXPS32K358_USART_H
-#define HW_NXPS32K358_USART_H
+#ifndef HW_NXPS32K358_LPUART_H
+#define HW_NXPS32K358_LPUART_H
 
 #include "hw/sysbus.h"
 #include "chardev/char-fe.h"
@@ -124,9 +124,9 @@ static inline uint32_t LPUART_FIFO_RESET(int n) {
 #define LPUART_TDB_RESET 0x00000000
 
 #define TYPE_NXPS32K358_LPUART "nxps32k358-lpuart"
-OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K35LPUartState, NXPS32K358_LPUART)
+OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358LPUartState, NXPS32K358_LPUART)
 
-struct NXPS32K35LPUartState {
+struct NXPS32K358LPUartState {
     /* <private> */
     SysBusDevice parent_obj;
 

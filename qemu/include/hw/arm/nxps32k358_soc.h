@@ -69,7 +69,7 @@ struct NXPS32K358State {
 
     MemoryRegion tmp;
 
-    NXPS32K35LPUartState lpuart[NUM_LPUARTS];
+    NXPS32K358LPUartState lpuart[NUM_LPUARTS];
 
     Clock *sysclk;
     Clock *refclk;

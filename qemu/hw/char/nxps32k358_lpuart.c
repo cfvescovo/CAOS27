@@ -51,7 +51,7 @@
 #define DB_PRINT_READ(fmt, args...) DB_PRINT_L(2, fmt, ##args)
 
 static int nxps32k358_lpuart_can_receive(void *opaque) {
-    NXPS32K35LPUartState *s = opaque;
+    NXPS32K358LPUartState *s = opaque;
 
     if (s->lpuart_stat & R_STAT_RDRF_MASK) {
         return 0;
@@ -60,7 +60,7 @@ static int nxps32k358_lpuart_can_receive(void *opaque) {
     return 1;
 }
 
-static void nxps32k358_update_irq(NXPS32K35LPUartState *s) {
+static void nxps32k358_update_irq(NXPS32K358LPUartState *s) {
     uint32_t mask = s->lpuart_stat & s->lpuart_control;
 
     if (mask &
@@ -73,7 +73,7 @@ static void nxps32k358_update_irq(NXPS32K35LPUartState *s) {
 
 static void nxps32k358_lpuart_receive(void *opaque, const uint8_t *buf,
                                       int size) {
-    NXPS32K35LPUartState *s = opaque;
+    NXPS32K358LPUartState *s = opaque;
 
     if (!(s->lpuart_control & R_CONTROL_RE_MASK)) {
         /* Read not enabled - drop the chars */
@@ -91,7 +91,7 @@ static void nxps32k358_lpuart_receive(void *opaque, const uint8_t *buf,
 }
 
 static void nxps32k358_lpuart_reset(DeviceState *dev) {
-    NXPS32K35LPUartState *s = NXPS32K358_LPUART(dev);
+    NXPS32K358LPUartState *s = NXPS32K358_LPUART(dev);
 
     s->lpuart_verid = LPUART_VERID_RESET(s->lpuart_port);
     s->lpuart_param = LPUART_PARAM_RESET(s->lpuart_port);
@@ -126,7 +126,7 @@ static void nxps32k358_lpuart_reset(DeviceState *dev) {
     nxps32k358_update_irq(s);
 }
 
-static void nxps32k358_lpuart_update_params(NXPS32K35LPUartState *s) {
+static void nxps32k358_lpuart_update_params(NXPS32K358LPUartState *s) {
     QEMUSerialSetParams ssp;
     uint32_t sbr = s->lpuart_baud & 0x1FFF;
     uint32_t osr = (s->lpuart_baud >> 24) & 0x1F;
@@ -139,7 +139,7 @@ static void nxps32k358_lpuart_update_params(NXPS32K35LPUartState *s) {
 
 static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
                                        unsigned int size) {
-    NXPS32K35LPUartState *s = opaque;
+    NXPS32K358LPUartState *s = opaque;
     uint64_t retvalue;
 
     DB_PRINT_READ("Read 0x%" HWADDR_PRIx "\n", addr);
@@ -174,7 +174,7 @@ static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
 
 static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
                                     unsigned int size) {
-    NXPS32K35LPUartState *s = opaque;
+    NXPS32K358LPUartState *s = opaque;
     uint32_t value = val64;
     unsigned char ch;
 
@@ -222,12 +222,12 @@ static const MemoryRegionOps nxps32k358_lpuart_ops = {
 };
 
 static Property nxps32k358_lpuart_properties[] = {
-    DEFINE_PROP_CHR("chardev", NXPS32K35LPUartState, chr),
+    DEFINE_PROP_CHR("chardev", NXPS32K358LPUartState, chr),
     DEFINE_PROP_END_OF_LIST(),
 };
 
 static void nxps32k358_lpuart_init(Object *obj) {
-    NXPS32K35LPUartState *s = NXPS32K358_LPUART(obj);
+    NXPS32K358LPUartState *s = NXPS32K358_LPUART(obj);
 
     sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq);
 
@@ -239,7 +239,7 @@ static void nxps32k358_lpuart_init(Object *obj) {
 }
 
 static void nxps32k358_lpuart_realize(DeviceState *dev, Error **errp) {
-    NXPS32K35LPUartState *s = NXPS32K358_LPUART(dev);
+    NXPS32K358LPUartState *s = NXPS32K358_LPUART(dev);
     if (!clock_has_source(s->clk)) {
         error_setg(errp, "LPUART clock must be wired up by SoC code");
         return;
@@ -261,7 +261,7 @@ static void nxps32k358_lpuart_class_init(ObjectClass *klass, void *data) {
 static const TypeInfo nxps32k358_lpuart_info = {
     .name = TYPE_NXPS32K358_LPUART,
     .parent = TYPE_SYS_BUS_DEVICE,
-    .instance_size = sizeof(NXPS32K35LPUartState),
+    .instance_size = sizeof(NXPS32K358LPUartState),
     .instance_init = nxps32k358_lpuart_init,
     .class_init = nxps32k358_lpuart_class_init,
 };
