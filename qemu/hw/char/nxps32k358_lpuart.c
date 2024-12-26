@@ -33,23 +33,27 @@
 #include "qemu/log.h"
 #include "qemu/module.h"
 
-#ifndef STM_USART_ERR_DEBUG
-#define STM_USART_ERR_DEBUG 0
+// If NXP_LPUART_DEBUG is 0, no debug messages will be printed
+// If it is 1, only write logs will be printed
+// If it is 2, read and write logs will be printed
+#ifndef NXP_LPUART_DEBUG
+#define NXP_LPUART_DEBUG 0
 #endif
 
 #define DB_PRINT_L(lvl, fmt, args...)               \
     do {                                            \
-        if (STM_USART_ERR_DEBUG >= lvl) {           \
+        if (NXP_LPUART_DEBUG >= lvl) {              \
             qemu_log("%s: " fmt, __func__, ##args); \
         }                                           \
     } while (0)
 
 #define DB_PRINT(fmt, args...) DB_PRINT_L(1, fmt, ##args)
+#define DB_PRINT_READ(fmt, args...) DB_PRINT_L(2, fmt, ##args)
 
 static int nxps32k358_lpuart_can_receive(void *opaque) {
     NXPS32K35LPUartState *s = opaque;
 
-    if (s->lpuart_stat & LPUART_STAT_RDRF) {
+    if (s->lpuart_stat & R_STAT_RDRF_MASK) {
         return 0;
     }
 
@@ -59,7 +63,8 @@ static int nxps32k358_lpuart_can_receive(void *opaque) {
 static void nxps32k358_update_irq(NXPS32K35LPUartState *s) {
     uint32_t mask = s->lpuart_stat & s->lpuart_control;
 
-    if (mask & (LPUART_SR_TIE | LPUART_SR_TCIE | LPUART_SR_RIE)) {
+    if (mask &
+        (R_CONTROL_TIE_MASK | R_CONTROL_TCIE_MASK | R_CONTROL_RIE_MASK)) {
         qemu_set_irq(s->irq, 1);
     } else {
         qemu_set_irq(s->irq, 0);
@@ -70,15 +75,15 @@ static void nxps32k358_lpuart_receive(void *opaque, const uint8_t *buf,
                                       int size) {
     NXPS32K35LPUartState *s = opaque;
 
-    if (!(s->lpuart_control & LPUART_CONTROL_RE)) {
+    if (!(s->lpuart_control & R_CONTROL_RE_MASK)) {
         /* Read not enabled - drop the chars */
-        DB_PRINT("Dropping the chars\n");
+        DB_PRINT("Dropping the chars, read is disabled\n");
         return;
     }
 
     s->lpuart_data = *buf;
 
-    s->lpuart_stat |= LPUART_STAT_RDRF;
+    s->lpuart_stat |= R_STAT_RDRF_MASK;
 
     nxps32k358_update_irq(s);
 
@@ -137,25 +142,25 @@ static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
     NXPS32K35LPUartState *s = opaque;
     uint64_t retvalue;
 
-    DB_PRINT("Read 0x%" HWADDR_PRIx "\n", addr);
+    DB_PRINT_READ("Read 0x%" HWADDR_PRIx "\n", addr);
 
     switch (addr) {
-        case LPUART_VERID:
+        case A_VERID:
             return s->lpuart_verid;
-        case LPUART_STAT:
+        case A_STAT:
             retvalue = s->lpuart_stat;
             return retvalue;
-        case LPUART_DATA:
-            DB_PRINT("Value: 0x%" PRIx32 ", %c\n", s->lpuart_data,
-                     (char)s->lpuart_data);
+        case A_DATA:
+            DB_PRINT_READ("Value: 0x%" PRIx32 ", %c\n", s->lpuart_data,
+                          (char)s->lpuart_data);
             retvalue = s->lpuart_data;
-            s->lpuart_stat &= ~LPUART_STAT_RDRF;
+            s->lpuart_stat &= ~R_STAT_RDRF_MASK;
             qemu_chr_fe_accept_input(&s->chr);
             nxps32k358_update_irq(s);
             return retvalue;
-        case LPUART_CONTROL:
+        case A_CONTROL:
             return s->lpuart_control;
-        case LPUART_BAUD:
+        case A_BAUD:
             return s->lpuart_baud;
         default:
             qemu_log_mask(LOG_GUEST_ERROR,
@@ -176,36 +181,30 @@ static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
     DB_PRINT("Write 0x%" PRIx32 ", 0x%" HWADDR_PRIx "\n", value, addr);
 
     switch (addr) {
-        case LPUART_STAT:
+        case A_STAT:
             nxps32k358_update_irq(s);
             return;
-        case LPUART_DATA:
-            if (!(s->lpuart_control & LPUART_CONTROL_M)) {
-                if (s->lpuart_control & LPUART_CONTROL_M7) {
-                    value = value & 0x7F;
-                }
-                ch = value;
-                /* XXX this blocks entire thread. Rewrite to use
-                 * qemu_chr_fe_write and background I/O callbacks */
-                qemu_chr_fe_write_all(&s->chr, &ch, 1);
-                /* XXX I/O are currently synchronous, making it impossible for
-                   software to observe transient states where TXE or TC aren't
-                   set. Unlike TXE however, which is read-only, software may
-                   clear TC by writing 0 to the SR register, so set it again
-                   on each write. */
-                s->lpuart_stat |= LPUART_SR_TCIE;
-                nxps32k358_update_irq(s);
-            } else {
+        case A_DATA:
+            bool is_7bit = s->lpuart_control & R_CONTROL_M7_MASK;
+            bool is_9bit = s->lpuart_control & R_CONTROL_M_MASK;
+            if (is_9bit) {
                 qemu_log_mask(LOG_GUEST_ERROR,
                               "%s: 9-bit data format not supported\n",
                               __func__);
+                return;
             }
+            if (is_7bit) {
+                value &= 0x7F;
+            }
+            ch = value;
+            qemu_chr_fe_write_all(&s->chr, &ch, 1);
+            nxps32k358_update_irq(s);
             return;
-        case LPUART_CONTROL:
+        case A_CONTROL:
             s->lpuart_control = value;
             nxps32k358_update_irq(s);
             return;
-        case LPUART_BAUD:
+        case A_BAUD:
             s->lpuart_baud = value;
             nxps32k358_lpuart_update_params(s);
             return;

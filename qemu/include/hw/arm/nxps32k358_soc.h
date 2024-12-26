@@ -44,6 +44,10 @@ OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 #define ITCM_BASE_ADDRESS 0x00000000
 #define ITCM_SIZE (64 * 1024)
 
+static inline uint32_t LPUART_ADDR(int n) { return 0x40328000 + 0x4000 * n; }
+static inline uint32_t LPUART_IRQ(int n) { return 141 + n; }
+#define NUM_LPUARTS 16
+
 struct NXPS32K358State {
     SysBusDevice parent_obj;
 
