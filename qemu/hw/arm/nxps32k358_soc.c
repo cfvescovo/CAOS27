@@ -76,6 +76,10 @@ static void nxps32k358_soc_initfn(Object *obj) {
 
     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
     s->refclk = qdev_init_clock_in(DEVICE(s), "refclk", NULL, NULL, 0);
+    s->aips_plat_clk =
+        qdev_init_clock_in(DEVICE(s), "aips_plat_clk", NULL, NULL, 0);
+    s->aips_slow_clk =
+        qdev_init_clock_in(DEVICE(s), "aips_slow_clk", NULL, NULL, 0);
     for (int i = 0; i < NUM_LPUARTS; i++) {
         object_initialize_child(obj, "lpuart[*]", &s->lpuart[i],
                                 TYPE_NXPS32K358_LPUART);
@@ -90,11 +94,6 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
 
     MemoryRegion *system_memory = get_system_memory();
 
-    /*
-     * We use s->refclk internally and only define it with qdev_init_clock_in()
-     * so it is correctly parented and not leaked on an init/deinit; it is not
-     * intended as an externally exposed clock.
-     */
     if (clock_has_source(s->refclk)) {
         error_setg(errp, "refclk clock must not be wired up by the board code");
         return;
@@ -113,6 +112,11 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     /* The refclk always runs at frequency HCLK / 8 */
     clock_set_mul_div(s->refclk, 8, 1);
     clock_set_source(s->refclk, s->sysclk);
+
+    // These are the default frequencies for the S32K358
+    // In theory we should implement the MC_RGM to change both frequencies
+    clock_set_hz(s->aips_plat_clk, 80000000);
+    clock_set_hz(s->aips_slow_clk, 40000000);
 
     create_unimplemented_device("DUMMY", 0x0, 0xFFFFFFFF);
 
@@ -208,7 +212,13 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     for (int i = 0; i < NUM_LPUARTS; i++) {
         dev = DEVICE(&(s->lpuart[i]));
         qdev_prop_set_chr(dev, "chardev", serial_hd(i));
-        qdev_connect_clock_in(dev, "clk", s->refclk);
+        // LPUART 0, 1 and 8 use AIPS_PLAT_CLK (MUX_0_DC_1)
+        // LPUART 2 to 7 and 9 to 15 use AIPS_SLOW_CLK (MUX_0_DC_2)
+        if (i < 2 || i == 8) {
+            qdev_connect_clock_in(dev, "clk", s->aips_plat_clk);
+        } else {
+            qdev_connect_clock_in(dev, "clk", s->aips_slow_clk);
+        }
         if (!sysbus_realize(SYS_BUS_DEVICE(&s->lpuart[i]), errp)) {
             return;
         }

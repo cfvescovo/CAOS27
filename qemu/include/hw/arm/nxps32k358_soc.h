@@ -75,6 +75,9 @@ struct NXPS32K358State {
 
     Clock *sysclk;
     Clock *refclk;
+
+    Clock *aips_plat_clk;
+    Clock *aips_slow_clk;
 };
 
 typedef struct NXPS32K358State NXPS32K358State;
