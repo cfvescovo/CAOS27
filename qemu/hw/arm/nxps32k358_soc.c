@@ -35,6 +35,39 @@
 #include "hw/misc/unimp.h"
 #include "sysemu/sysemu.h"
 
+static uint64_t mc_me_read(void *opaque, hwaddr addr, unsigned size) {
+    NXPS32K358State *s = opaque;
+    uint32_t ret = 0;
+
+    switch (addr) {
+        case 0x310:
+            ret = 0x1000000;
+            break;
+        default:
+            ret = 0x0;
+            break;
+    }
+
+    return ret;
+}
+
+static void mc_me_write(void *opaque, hwaddr addr, uint64_t val,
+                        unsigned size) {
+    NXPS32K358State *s = opaque;
+    uint32_t value = val;
+
+    switch (addr) {
+        default:
+            break;
+    }
+}
+
+static const MemoryRegionOps mc_me_ops = {
+    .read = mc_me_read,
+    .write = mc_me_write,
+    .endianness = DEVICE_NATIVE_ENDIAN,
+};
+
 static void nxps32k358_soc_initfn(Object *obj) {
     NXPS32K358State *s = NXPS32K358_SOC(obj);
     // int i;
@@ -121,36 +154,35 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
                                 &s->data_flash);
 
     /* Init SRAM region */
-    memory_region_init_ram(&s->sram_0, NULL, "NXPS32K358.sram_0",
+    memory_region_init_ram(&s->sram_0, OBJECT(dev_soc), "NXPS32K358.sram_0",
                            SRAM_BLOCK_SIZE, &error_fatal);
     memory_region_add_subregion(system_memory, SRAM_BASE_ADDRESS, &s->sram_0);
 
-    memory_region_init_ram(&s->sram_1, NULL, "NXPS32K358.sram_1",
+    memory_region_init_ram(&s->sram_1, OBJECT(dev_soc), "NXPS32K358.sram_1",
                            SRAM_BLOCK_SIZE, &error_fatal);
     memory_region_add_subregion(
         system_memory, SRAM_BASE_ADDRESS + SRAM_BLOCK_SIZE, &s->sram_1);
 
-    memory_region_init_ram(&s->sram_2, NULL, "NXPS32K358.sram_2",
+    memory_region_init_ram(&s->sram_2, OBJECT(dev_soc), "NXPS32K358.sram_2",
                            SRAM_BLOCK_SIZE, &error_fatal);
     memory_region_add_subregion(
         system_memory, (SRAM_BASE_ADDRESS + (2 * SRAM_BLOCK_SIZE)), &s->sram_2);
 
     /* Init DTCM */
-    memory_region_init_ram(&s->dtcm, NULL, "NXPS32K358.dtcm", DTCM_SIZE,
-                           &error_fatal);
+    memory_region_init_ram(&s->dtcm, OBJECT(dev_soc), "NXPS32K358.dtcm",
+                           DTCM_SIZE, &error_fatal);
     memory_region_add_subregion(system_memory, DTCM_BASE_ADDRESS, &s->dtcm);
 
     /* Init ITCM */
-    memory_region_init_ram(&s->itcm, NULL, "NXPS32K358.itcm", ITCM_SIZE,
-                           &error_fatal);
+    memory_region_init_ram(&s->itcm, OBJECT(dev_soc), "NXPS32K358.itcm",
+                           ITCM_SIZE, &error_fatal);
     memory_region_add_subregion(system_memory, ITCM_BASE_ADDRESS, &s->itcm);
 
-    /* Map MCME_PRTN1_COFB0_STAT */
-    memory_region_init_ram(&s->tmp, NULL, "NXPS32K358.MCME_PRTN1_COFB0_STAT", 4,
-                           &error_fatal);
-    memory_region_add_subregion(system_memory, 0x402DC310, &s->tmp);
-    int test = 0x1000000;
-    cpu_physical_memory_rw(0x402DC310, &test, sizeof(test), 1);
+    /* Init MC_ME */
+    memory_region_init_io(&s->mc_me, OBJECT(dev_soc), &mc_me_ops, s,
+                          "NXPS32K358.MC_ME", MC_ME_SIZE);
+    sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->mc_me);
+    memory_region_add_subregion(system_memory, MC_ME_BASE_ADDRESS, &s->mc_me);
 
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);

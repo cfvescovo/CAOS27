@@ -29,12 +29,16 @@
 #include "chardev/char-fe.h"
 #include "qom/object.h"
 #include "hw/registerfields.h"
+#include "hw/qdev-clock.h"
 
 REG32(VERID, 0x00)
 REG32(PARAM, 0x04)
 REG32(GLOBAL, 0x08)
 REG32(PINCFG, 0x0C)
+
 REG32(BAUD, 0x10)
+FIELD(BAUD, SBR, 0, 13)
+FIELD(BAUD, OSR, 24, 5)
 
 REG32(STAT, 0x14)
 // Receiver Data Register Full Flag
@@ -164,5 +168,11 @@ struct NXPS32K358LPUartState {
     CharBackend chr;
     qemu_irq irq;
 };
+
+static inline uint32_t LPUART_BAUD_RATE(NXPS32K358LPUartState *s) {
+    uint32_t sbr = FIELD_EX32(s->lpuart_baud, BAUD, SBR);
+    uint32_t osr = FIELD_EX32(s->lpuart_baud, BAUD, OSR);
+    return clock_get_hz(s->clk) / (sbr * (osr + 1));
+}
 
 #endif

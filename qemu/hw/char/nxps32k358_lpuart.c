@@ -128,10 +128,7 @@ static void nxps32k358_lpuart_reset(DeviceState *dev) {
 
 static void nxps32k358_lpuart_update_params(NXPS32K358LPUartState *s) {
     QEMUSerialSetParams ssp;
-    uint32_t sbr = s->lpuart_baud & 0x1FFF;
-    uint32_t osr = (s->lpuart_baud >> 24) & 0x1F;
-    unsigned int baud_base = clock_get_hz(s->clk);
-    ssp.speed = baud_base / (sbr * (osr + 1));
+    ssp.speed = LPUART_BAUD_RATE(s);
     DB_PRINT("Baud rate: %d\n", ssp.speed);
 
     qemu_chr_fe_ioctl(&s->chr, CHR_IOCTL_SERIAL_SET_PARAMS, &ssp);
