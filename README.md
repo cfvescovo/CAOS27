@@ -34,18 +34,47 @@ of other UNIX targets. The simple steps to build QEMU are:
 
 To add support for NXP S32K3X8EVB board in QEMU, you need to define a new System-on-Chip (SoC) model. This involves the following steps:
 
-Create the SoC Model:
+#### Create the SoC Model:
 
 Write a new source file in the hw/arm directory (hw/arm/nxps32k358_soc.c).
 
 Define the peripherals, memory map, and CPU for your SoC.
 
-Define the Board:
+#### Define the Board:
 
 Implement the board model in the hw/arm/ directory (hw/arm/nxps32k3x8evb.c).
 
 Connect the SoC model to the board, specifying how peripherals are mapped and initialized.
 
-Update Build System and KConfig:
+#### Update Build System and KConfig:
 
 Add your new files to the appropriate meson.build and KConfig files to ensure they are compiled.
+
+#### Software installation
+Importing the NXP Design Studio project.
+
+## Part 2: Installing FreeRTOS Functionality
+To install the functionality of FreeRTOS on the newly added board, follow these steps:
+
+#### Prepare the FreeRTOS Project:
+
+Download the FreeRTOS source code from the official repository https://github.com/FreeRTOS/FreeRTOS.
+
+Configure the FreeRTOS project to match your board specifications (e.g., clock settings, memory map).
+
+#### Build FreeRTOS:
+
+Compile the FreeRTOS project using a compatible cross-compiler (GCC).
+(AGGIUNGERE COMANDO)
+
+Generate a binary or ELF file suitable for your QEMU board.
+(CHIEDERE A FEDE)
+
+#### Run FreeRTOS on QEMU:
+
+Launch QEMU with your new board and load the FreeRTOS binary:
+
+``` shell
+qemu-system-arm -M my_new_board -kernel freertos.bin -nographic
+```
+(CONTROLLARE)
