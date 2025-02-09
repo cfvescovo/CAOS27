@@ -247,6 +247,7 @@ config NXPS32K3X8EVB
     depends on TCG && ARM
     select NXPS32K358_SOC
     select NXPS32K358_LPUART
+    select NXPS32K358_EDMA
 
 config STRONGARM
     bool

@@ -1,7 +1,7 @@
 /*
  * NXPS32K358 SoC
  *
- * Copyright (c) 2021 Alexandre Iooss <erdnaxe@crans.org>
+ * Copyright (c) 2024-2025 CFV & Giovanni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 #include "hw/clock.h"
 #include "qom/object.h"
 #include "hw/char/nxps32k358_lpuart.h"
+#include "hw/dma/nxps32k358_edma.h"
 
 #define TYPE_NXPS32K358_SOC "nxps32k358-soc"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
@@ -49,6 +50,10 @@ OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358State, NXPS32K358_SOC)
 static inline uint32_t LPUART_ADDR(int n) { return 0x40328000 + 0x4000 * n; }
 static inline uint32_t LPUART_IRQ(int n) { return 141 + n; }
 #define NUM_LPUARTS 16
+
+#define EDMA_BASE_ADDRESS 0x4020C000
+static inline uint32_t EDMA_IRQ(int n) { return 4 + n; }
+#define NUM_EDMA_CHANNELS 32
 
 struct NXPS32K358State {
     SysBusDevice parent_obj;
@@ -72,6 +77,7 @@ struct NXPS32K358State {
     MemoryRegion mc_me;
 
     NXPS32K358LPUartState lpuart[NUM_LPUARTS];
+    NXPS32K358EDMAState edma;
 
     Clock *sysclk;
     Clock *refclk;

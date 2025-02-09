@@ -30,6 +30,7 @@
 #include "exec/address-spaces.h"
 #include "hw/arm/nxps32k358_soc.h"
 #include "hw/char/nxps32k358_lpuart.h"
+#include "hw/dma/nxps32k358_edma.h"
 #include "hw/qdev-properties.h"
 #include "hw/qdev-clock.h"
 #include "hw/misc/unimp.h"
@@ -241,7 +242,6 @@ static void create_unimplemented_devices(void) {
 }
 
 static uint64_t mc_me_read(void *opaque, hwaddr addr, unsigned size) {
-    NXPS32K358State *s = opaque;
     uint32_t ret = 0;
 
     switch (addr) {
@@ -258,9 +258,6 @@ static uint64_t mc_me_read(void *opaque, hwaddr addr, unsigned size) {
 
 static void mc_me_write(void *opaque, hwaddr addr, uint64_t val,
                         unsigned size) {
-    NXPS32K358State *s = opaque;
-    uint32_t value = val;
-
     switch (addr) {
         default:
             break;
@@ -289,6 +286,7 @@ static void nxps32k358_soc_initfn(Object *obj) {
         object_initialize_child(obj, "lpuart[*]", &s->lpuart[i],
                                 TYPE_NXPS32K358_LPUART);
     }
+    object_initialize_child(obj, "edma", &s->edma, TYPE_NXPS32K358_EDMA);
 }
 
 static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
@@ -428,6 +426,17 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
         busdev = SYS_BUS_DEVICE(dev);
         sysbus_mmio_map(busdev, 0, LPUART_ADDR(i));
         sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, LPUART_IRQ(i)));
+    }
+
+    /* Attach eDMA controller */
+    dev = DEVICE(&s->edma);
+    if (!sysbus_realize(SYS_BUS_DEVICE(&s->edma), errp)) {
+        return;
+    }
+    busdev = SYS_BUS_DEVICE(dev);
+    sysbus_mmio_map(busdev, 0, EDMA_BASE_ADDRESS);
+    for (int i = 0; i < NUM_EDMA_CHANNELS; i++) {
+        sysbus_connect_irq(busdev, i, qdev_get_gpio_in(armv7m, EDMA_IRQ(i)));
     }
 
     // Implemented devices have higher priority than unimplemented ones so we

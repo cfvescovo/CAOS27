@@ -30,3 +30,6 @@ config SIFIVE_PDMA
 config XLNX_CSU_DMA
     bool
     select REGISTER
+
+config NXPS32K358_EDMA
+    bool
