@@ -1,14 +1,14 @@
 /*==================================================================================================
-*   Project              : RTD AUTOSAR 4.7 
+*   Project              : RTD AUTOSAR 4.7
 *   Platform             : CORTEXM
-*   Peripheral           : SIUL2
-*   Dependencies         : none
+*   Peripheral           : FLEXIO
+*   Dependencies         : 
 *
 *   Autosar Version      : 4.7.0
 *   Autosar Revision     : ASR_REL_4_7_REV_0000
 *   Autosar Conf.Variant :
 *   SW Version           : 3.0.0
-*   Build Version        : S32K3_AUTOSAR_4_4_-_R21-11_RTD_3_0_0_D2303_ASR_REL_4_7_REV_0000_20230331
+*   Build Version        : S32K3_RTD_3_0_0_D2303_ASR_REL_4_7_REV_0000_20230331
 *
 *   Copyright 2020 - 2023 NXP Semiconductors
 *
@@ -21,15 +21,22 @@
 *   activate or otherwise use the software.
 ==================================================================================================*/
 
+
+#ifndef LPUART_UART_IP_SA_PBCFG_H
+#define LPUART_UART_IP_SA_PBCFG_H
+
+
 /**
-*   @file      Tspc_Port_Ip_Cfg.h
-*
-*   @addtogroup Port_CFG
+*   @file Lpuart_Uart_Ip_PBcfg.h
+*   @defgroup lpuart_uart_ip Lpuart UART IPL
+*   @addtogroup  lpuart_uart_ip Lpuart UART IPL
 *   @{
 */
 
+
 #ifdef __cplusplus
-extern "C"{
+extern "C"
+{
 #endif
 
 
@@ -39,95 +46,95 @@ extern "C"{
  2) needed interfaces from external units
  3) internal and external interfaces from this unit
 ==================================================================================================*/
-#include "Tspc_Port_Ip_Cfg.h"
+#include "Lpuart_Uart_Ip_Types.h"
 
 /*==================================================================================================
 *                              SOURCE FILE VERSION INFORMATION
 ==================================================================================================*/
-#define TSPC_PORT_IP_VENDOR_ID_CFG_C                       43
-#define TSPC_PORT_IP_AR_RELEASE_MAJOR_VERSION_CFG_C        4
-#define TSPC_PORT_IP_AR_RELEASE_MINOR_VERSION_CFG_C        7
-#define TSPC_PORT_IP_AR_RELEASE_REVISION_VERSION_CFG_C     0
-#define TSPC_PORT_IP_SW_MAJOR_VERSION_CFG_C                3
-#define TSPC_PORT_IP_SW_MINOR_VERSION_CFG_C                0
-#define TSPC_PORT_IP_SW_PATCH_VERSION_CFG_C                0
+#define LPUART_UART_IP_SA_PBCFG_VENDOR_ID                     43
+#define LPUART_UART_IP_SA_PBCFG_AR_RELEASE_MAJOR_VERSION      4
+#define LPUART_UART_IP_SA_PBCFG_AR_RELEASE_MINOR_VERSION      7
+#define LPUART_UART_IP_SA_PBCFG_AR_RELEASE_REVISION_VERSION   0
+#define LPUART_UART_IP_SA_PBCFG_SW_MAJOR_VERSION              3
+#define LPUART_UART_IP_SA_PBCFG_SW_MINOR_VERSION              0
+#define LPUART_UART_IP_SA_PBCFG_SW_PATCH_VERSION              0
+
 
 /*==================================================================================================
-*                                     FILE VERSION CHECKS
+                                      FILE VERSION CHECKS
 ==================================================================================================*/
-/* Check if Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h are of the same vendor */
-#if (TSPC_PORT_IP_VENDOR_ID_CFG_C != TSPC_PORT_IP_VENDOR_ID_CFG_H)
-    #error "Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h have different vendor ids"
+/* Checks against Lpuart_Uart_Ip_Types.h */
+#if (LPUART_UART_IP_SA_PBCFG_VENDOR_ID != LPUART_UART_IP_TYPES_VENDOR_ID)
+    #error "Lpuart_Uart_Ip_Sa_PBcfg.h and Lpuart_Uart_Ip_Types.h have different vendor ids"
 #endif
-/* Check if Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h are of the same Autosar version */
-#if ((TSPC_PORT_IP_AR_RELEASE_MAJOR_VERSION_CFG_C    != TSPC_PORT_IP_AR_RELEASE_MAJOR_VERSION_CFG_H) || \
-    (TSPC_PORT_IP_AR_RELEASE_MINOR_VERSION_CFG_C    != TSPC_PORT_IP_AR_RELEASE_MINOR_VERSION_CFG_H) || \
-    (TSPC_PORT_IP_AR_RELEASE_REVISION_VERSION_CFG_C != TSPC_PORT_IP_AR_RELEASE_REVISION_VERSION_CFG_H) \
-    )
-    #error "AutoSar Version Numbers of Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h are different"
+#if ((LPUART_UART_IP_SA_PBCFG_AR_RELEASE_MAJOR_VERSION   != LPUART_UART_IP_TYPES_AR_RELEASE_MAJOR_VERSION)|| \
+     (LPUART_UART_IP_SA_PBCFG_AR_RELEASE_MINOR_VERSION   != LPUART_UART_IP_TYPES_AR_RELEASE_MINOR_VERSION)|| \
+     (LPUART_UART_IP_SA_PBCFG_AR_RELEASE_REVISION_VERSION!= LPUART_UART_IP_TYPES_AR_RELEASE_REVISION_VERSION))
+    #error "AUTOSAR Version Numbers of Lpuart_Uart_Ip_Sa_PBcfg.h and Lpuart_Uart_Ip_Types.h are different"
 #endif
-/* Check if Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h are of the same Software version */
-#if ((TSPC_PORT_IP_SW_MAJOR_VERSION_CFG_C != TSPC_PORT_IP_SW_MAJOR_VERSION_CFG_H) || \
-    (TSPC_PORT_IP_SW_MINOR_VERSION_CFG_C != TSPC_PORT_IP_SW_MINOR_VERSION_CFG_H) || \
-    (TSPC_PORT_IP_SW_PATCH_VERSION_CFG_C != TSPC_PORT_IP_SW_PATCH_VERSION_CFG_H)    \
-    )
-    #error "Software Version Numbers of Tspc_Port_Ip_Cfg.c and Tspc_Port_Ip_Cfg.h are different"
+#if ((LPUART_UART_IP_SA_PBCFG_SW_MAJOR_VERSION!= LPUART_UART_IP_TYPES_SW_MAJOR_VERSION)|| \
+     (LPUART_UART_IP_SA_PBCFG_SW_MINOR_VERSION!= LPUART_UART_IP_TYPES_SW_MINOR_VERSION)|| \
+     (LPUART_UART_IP_SA_PBCFG_SW_PATCH_VERSION!= LPUART_UART_IP_TYPES_SW_PATCH_VERSION))
+    #error "Software Version Numbers of Lpuart_Uart_Ip_Sa_PBcfg.h and Lpuart_Uart_Ip_Types.h are different"
 #endif
 
 /*==================================================================================================
-                             LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
+                          LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
 ==================================================================================================*/
 
 /*==================================================================================================
-                                             LOCAL MACROS
+                                       LOCAL CONSTANTS
 ==================================================================================================*/
 
 /*==================================================================================================
-                                            LOCAL CONSTANTS
+*                                       GLOBAL MACROS
+==================================================================================================*/
+/**
+* @brief          Link Uart channels symbolic names with Uart hardware channel IDs.
+* @details        Link Uart channels symbolic names with Uart hardware channel IDs.
+*
+* @api
+*/
+
+#ifndef LPUART_UART_IP_INSTANCE_USING_3
+    #define LPUART_UART_IP_INSTANCE_USING_3   3U
+#endif
+
+/*==================================================================================================
+                                       LOCAL VARIABLES
 ==================================================================================================*/
 
 /*==================================================================================================
-                                           LOCAL VARIABLES
+                                       GLOBAL CONSTANTS
 ==================================================================================================*/
 
 /*==================================================================================================
-                                           GLOBAL CONSTANTS
+                        GLOBAL VARIABLES AND GLOBAL FUNCTION PROTOTYPES
+==================================================================================================*/
+/**
+* @brief    Declare callback functions if any .
+*/
+/**
+* @brief    Hardware configuration for Lpuart Uart Hardware - Configuration.
+*/
+#define LPUART_UART_IP_SA_CONFIG_PB \
+extern const Lpuart_Uart_Ip_UserConfigType Lpuart_Uart_Ip_xHwConfigPB_3;
+/*==================================================================================================
+                                   LOCAL FUNCTION PROTOTYPES
 ==================================================================================================*/
 
 /*==================================================================================================
-                                           GLOBAL VARIABLES
-==================================================================================================*/
-
-/* clang-format off */
-
-/*
- * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
-BOARD_InitPins:
-- options: {callFromInitBoot: 'true', coreID: M7_0_0}
-- pin_list:
-  - {pin_num: M15, peripheral: LPUART3, signal: lpuart3_rx, pin_signal: PTA6}
-  - {pin_num: M16, peripheral: LPUART3, signal: lpuart3_tx, pin_signal: PTA7, direction: INPUT/OUTPUT}
- * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
- */
-/* clang-format on */
-
-/* No registers that support TSPC were configured*/
-
-/*==================================================================================================
-                                      LOCAL FUNCTION PROTOTYPES
+                                       LOCAL FUNCTIONS
 ==================================================================================================*/
 
 /*==================================================================================================
-                                           LOCAL FUNCTIONS
+                                       GLOBAL FUNCTIONS
 ==================================================================================================*/
-
-/*==================================================================================================
-                                           GLOBAL FUNCTIONS
-==================================================================================================*/
-
 
 #ifdef __cplusplus
 }
 #endif
-
 /** @} */
+
+#endif /* LPUART_UART_IP_SA_PBCFG_H */
+

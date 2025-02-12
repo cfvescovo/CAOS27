@@ -1,8 +1,8 @@
 /*==================================================================================================
 *   Project              : RTD AUTOSAR 4.7
 *   Platform             : CORTEXM
-*   Peripheral           : SIUL2
-*   Dependencies         : none
+*   Peripheral           : FLEXIO
+*   Dependencies         : 
 *
 *   Autosar Version      : 4.7.0
 *   Autosar Revision     : ASR_REL_4_7_REV_0000
@@ -21,82 +21,88 @@
 *   activate or otherwise use the software.
 ==================================================================================================*/
 
-#ifndef SIUL2_DIO_IP_CFG_H
-#define SIUL2_DIO_IP_CFG_H
+#ifndef LPUART_UART_IP_DEFINES_H
+#define LPUART_UART_IP_DEFINES_H
+
+/**
+*   @file
+*   @defgroup lpuart_uart_ip Lpuart UART IPL
+*   @addtogroup  lpuart_uart_ip Lpuart UART IPL
+*   @{
+*/
 
 #ifdef __cplusplus
 extern "C"{
 #endif
-
-
 /*==================================================================================================
 *                                        INCLUDE FILES
 * 1) system and project includes
 * 2) needed interfaces from external units
 * 3) internal and external interfaces from this unit
+* 4) user callback header files
 ==================================================================================================*/
-#include "S32K358_SIUL2.h"
-/*==================================================================================================
+#include "Mcal.h"
+#include "S32K358_LPUART.h"/*==================================================================================================
 *                              SOURCE FILE VERSION INFORMATION
 ==================================================================================================*/
-#define SIUL2_DIO_IP_VENDOR_ID_CFG_H                       43
-#define SIUL2_DIO_IP_AR_RELEASE_MAJOR_VERSION_CFG_H        4
-#define SIUL2_DIO_IP_AR_RELEASE_MINOR_VERSION_CFG_H        7
-#define SIUL2_DIO_IP_AR_RELEASE_REVISION_VERSION_CFG_H     0
-#define SIUL2_DIO_IP_SW_MAJOR_VERSION_CFG_H                3
-#define SIUL2_DIO_IP_SW_MINOR_VERSION_CFG_H                0
-#define SIUL2_DIO_IP_SW_PATCH_VERSION_CFG_H                0
+#define LPUART_UART_IP_DEFINES_VENDOR_ID                     43
+#define LPUART_UART_IP_DEFINES_AR_RELEASE_MAJOR_VERSION      4
+#define LPUART_UART_IP_DEFINES_AR_RELEASE_MINOR_VERSION      7
+#define LPUART_UART_IP_DEFINES_AR_RELEASE_REVISION_VERSION   0
+#define LPUART_UART_IP_DEFINES_SW_MAJOR_VERSION              3
+#define LPUART_UART_IP_DEFINES_SW_MINOR_VERSION              0
+#define LPUART_UART_IP_DEFINES_SW_PATCH_VERSION              0
 
 /*==================================================================================================
 *                                     FILE VERSION CHECKS
 ==================================================================================================*/
-
+#ifndef DISABLE_MCAL_INTERMODULE_ASR_CHECK
+    /* Checks against Mcal.h */
+    #if ((LPUART_UART_IP_DEFINES_AR_RELEASE_MAJOR_VERSION != MCAL_AR_RELEASE_MAJOR_VERSION) || \
+         (LPUART_UART_IP_DEFINES_AR_RELEASE_MINOR_VERSION != MCAL_AR_RELEASE_MINOR_VERSION))
+        #error "AUTOSAR Version Numbers of Lpuart_Uart_Ip_Defines.h and Mcal.h are different"
+    #endif
+#endif
 /*==================================================================================================
 *                                          CONSTANTS
 ==================================================================================================*/
 
 /*==================================================================================================
-*                                      DEFINES AND MACROS
+ *                                     DEFINES AND MACROS
 ==================================================================================================*/
+/* @brief Development error detection */
+#define LPUART_UART_IP_DEV_ERROR_DETECT         (STD_ON)
 
-/* Pre-processor switch to enable/disable VirtWrapper support */
-#define DIO_VIRTWRAPPER_SUPPORT                 (STD_OFF)
+/* @brief Total number of channels configured for Lpuart, the define should be set to 1 when Lpuart is not configured*/
+#define LPUART_UART_IP_NUMBER_OF_INSTANCES      (1U)
 
-/* Pre-processor switch to enable/disable development error detection for Dio Ip API */
-#define SIUL2_DIO_IP_DEV_ERROR_DETECT            (STD_ON)
+/* @brief Uart Osif source counter. This parameter is used to select between different OsIf counter implementation */
+#define LPUART_UART_IP_TIMEOUT_TYPE             (OSIF_COUNTER_DUMMY)
 
-/* GPIO - Peripheral instance base addresses */
-/** Peripheral PTA base address */
-#define PTA_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO0)))
-#define PTA_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO1)))
-/** Peripheral PTB base address */
-#define PTB_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO2)))
-#define PTB_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO3)))
-/** Peripheral PTC base address */
-#define PTC_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO4)))
-#define PTC_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO5)))
-/** Peripheral PTD base address */
-#define PTD_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO6)))
-#define PTD_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO7)))
-/** Peripheral PTE base address */
-#define PTE_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO8)))
-#define PTE_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO9)))
-/** Peripheral PTF base address */
-#define PTF_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO10)))
-#define PTF_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO11)))
-/** Peripheral PTG base address */
-#define PTG_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO12)))
-#define PTG_H_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO13)))
-/** Peripheral PTH base address */
-#define PTH_L_HALF ((Siul2_Dio_Ip_GpioType *)(&(IP_SIUL2->PGPDO14)))
+/* @brief Number of loops before returning STATUS_TIMEOUT.*/
+#define LPUART_UART_IP_TIMEOUT_VALUE_US         (0)
+
+/* @brief Lpuart DMA support */
+#define LPUART_UART_IP_HAS_DMA_ENABLED          (STD_OFF)
+
+/* @brief Lpuart Usermode support */
+#define LPUART_UART_IP_ENABLE_USER_MODE_SUPPORT (STD_OFF) /* Disable User Mode */
+
+/* @brief Support for Internal Loopback. If this parameter has been configured to TRUE, the Uart driver will be executed in Loopback mode. */
+#define LPUART_UART_IP_ENABLE_INTERNAL_LOOPBACK  (STD_OFF)
+
+#if (STD_ON == LPUART_UART_IP_ENABLE_INTERNAL_LOOPBACK)
+    /* @brief Array of instances that have loopback mode enabled. */
+    #define LPUART_UART_IP_ENABLE_INTERNAL_LOOPBACK_PER_INSTANCE  {(boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE, (boolean) FALSE}
+#endif
+
 /*==================================================================================================
-*                                             ENUMS
+*                                            ENUMS
 ==================================================================================================*/
 
 /*==================================================================================================
-*                                STRUCTURES AND OTHER TYPEDEFS
+*                               STRUCTURES AND OTHER TYPEDEFS
 ==================================================================================================*/
-
 
 /*==================================================================================================
 *                                GLOBAL VARIABLE DECLARATIONS
@@ -107,11 +113,12 @@ extern "C"{
 ==================================================================================================*/
 
 
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SIUL2_DIO_IP_CFG_H */
-
 /** @} */
+
+#endif /* LPUART_UART_IP_DEFINES_H */
 

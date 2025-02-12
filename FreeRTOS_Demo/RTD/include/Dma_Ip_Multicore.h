@@ -1,7 +1,7 @@
 /*==================================================================================================
 *   Project              : RTD AUTOSAR 4.7
 *   Platform             : CORTEXM
-*   Peripheral           : 
+*   Peripheral           : DMA,CACHE,TRGMUX,LCU,EMIOS,FLEXIO
 *   Dependencies         : none
 *
 *   Autosar Version      : 4.7.0
@@ -11,6 +11,7 @@
 *   Build Version        : S32K3_RTD_3_0_0_D2303_ASR_REL_4_7_REV_0000_20230331
 *
 *   Copyright 2020 - 2023 NXP Semiconductors
+*   
 *
 *   NXP Confidential. This software is owned or controlled by NXP and may only be
 *   used strictly in accordance with the applicable license terms. By expressly
@@ -21,103 +22,109 @@
 *   activate or otherwise use the software.
 ==================================================================================================*/
 
+/* Prevention from multiple including the same header */
+#ifndef DMA_IP_MULTICORE_H_
+#define DMA_IP_MULTICORE_H_
+
 /**
-*   @file    SchM_Dio.h
+*   @file    Dma_Ip_Multicore.h
+*
 *   @version 3.0.0
 *
-*   @brief   AUTOSAR Rte - module interface
-*   @details This file contains the functions prototypes and data types of the AUTOSAR Rte.
-*            This file contains sample code only. It is not part of the production code deliverables.
+*   @brief   AUTOSAR Mcl - Dma Ip driver header file.
+*   @details 
 *
-*   @addtogroup RTE_MODULE
+*   @addtogroup DMA_IP_DRIVER DMA IP Driver
 *   @{
 */
 
-#ifndef SCHM_DIO_H
-#define SCHM_DIO_H
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"{
 #endif
+
 /*==================================================================================================
-*                                         INCLUDE FILES
-* 1) system and project includes
-* 2) needed interfaces from external units
-* 3) internal and external interfaces from this unit
+*                                          INCLUDE FILES
+*  1) system and project includes
+*  2) needed interfaces from external units
+*  3) internal and external interfaces from this unit
 ==================================================================================================*/
+#include "Dma_Ip.h"
 
 /*==================================================================================================
-*                               SOURCE FILE VERSION INFORMATION
+                               SOURCE FILE VERSION INFORMATION
 ==================================================================================================*/
-#define SCHM_DIO_AR_RELEASE_MAJOR_VERSION     4
-#define SCHM_DIO_AR_RELEASE_MINOR_VERSION     7
-#define SCHM_DIO_AR_RELEASE_REVISION_VERSION  0
-#define SCHM_DIO_SW_MAJOR_VERSION             3
-#define SCHM_DIO_SW_MINOR_VERSION             0
-#define SCHM_DIO_SW_PATCH_VERSION             0
+#define DMA_IP_MULTICORE_VENDOR_ID                       43
+#define DMA_IP_MULTICORE_AR_RELEASE_MAJOR_VERSION        4
+#define DMA_IP_MULTICORE_AR_RELEASE_MINOR_VERSION        7
+#define DMA_IP_MULTICORE_AR_RELEASE_REVISION_VERSION     0
+#define DMA_IP_MULTICORE_SW_MAJOR_VERSION                3
+#define DMA_IP_MULTICORE_SW_MINOR_VERSION                0
+#define DMA_IP_MULTICORE_SW_PATCH_VERSION                0
 
 /*==================================================================================================
-*                                      FILE VERSION CHECKS
+                                      FILE VERSION CHECKS
 ==================================================================================================*/
+/* Check if header file and Dma_Ip.h file are of the same vendor */
+#if (DMA_IP_MULTICORE_VENDOR_ID != DMA_IP_VENDOR_ID)
+    #error "Dma_Ip_Multicore.h and Dma_Ip.h have different vendor ids"
+#endif
 
+/* Check if header file and Dma_Ip.h file are of the same Autosar version */
+#if ((DMA_IP_MULTICORE_AR_RELEASE_MAJOR_VERSION != DMA_IP_AR_RELEASE_MAJOR_VERSION) || \
+     (DMA_IP_MULTICORE_AR_RELEASE_MINOR_VERSION != DMA_IP_AR_RELEASE_MINOR_VERSION) || \
+     (DMA_IP_MULTICORE_AR_RELEASE_REVISION_VERSION != DMA_IP_AR_RELEASE_REVISION_VERSION) \
+    )
+    #error "AutoSar Version Numbers of Dma_Ip_Multicore.h and Dma_Ip.h are different"
+#endif
 
+/* Check if header file and Dma_Ip.h file are of the same Software version */
+#if ((DMA_IP_MULTICORE_SW_MAJOR_VERSION != DMA_IP_SW_MAJOR_VERSION) || \
+     (DMA_IP_MULTICORE_SW_MINOR_VERSION != DMA_IP_SW_MINOR_VERSION) || \
+     (DMA_IP_MULTICORE_SW_PATCH_VERSION != DMA_IP_SW_PATCH_VERSION) \
+    )
+    #error "Software Version Numbers of Dma_Ip_Multicore.h and Dma_Ip.h are different"
+#endif
+
+#if (STD_ON == DMA_IP_IS_AVAILABLE)
 /*==================================================================================================
-*                                           CONSTANTS
+*                                            CONSTANTS
 ==================================================================================================*/
 
 /*==================================================================================================
 *                                       DEFINES AND MACROS
 ==================================================================================================*/
-#define NUMBER_OF_CORES         (uint8)(4U)
 
 /*==================================================================================================
-*                                             ENUMS
+*                                              ENUMS
 ==================================================================================================*/
 
 /*==================================================================================================
-*                                 STRUCTURES AND OTHER TYPEDEFS
+*                                  STRUCTURES AND OTHER TYPEDEFS
 ==================================================================================================*/
 
 /*==================================================================================================
-*                                 GLOBAL VARIABLE DECLARATIONS
+*                                  GLOBAL VARIABLE DECLARATIONS
 ==================================================================================================*/
 
 /*==================================================================================================
-*                                     FUNCTION PROTOTYPES
+*                                       FUNCTION PROTOTYPES
 ==================================================================================================*/
-#define RTE_START_SEC_CODE
-#include "Rte_MemMap.h"
+#if (STD_ON == DMA_IP_MULTICORE_IS_AVAILABLE)
+#define MCL_START_SEC_CODE
+#include "Mcl_MemMap.h"
 
-#ifdef MCAL_TESTING_ENVIRONMENT
-/** 
-@brief   This function checks that all entered exclusive areas were also exited. 
-@details This function checks that all entered exclusive areas were also exited. The check
-         is done by verifying that all reentry_guard_* static variables are back to the
-         zero value.
-    
-@param[in]     void       No input parameters
-@return        void       This function does not return a value. Test asserts are used instead. 
+const Dma_Ip_InitType * Dma_Ip_GetInitPtr(void);
 
-@pre  None
-@post None
+Dma_Ip_ReturnType Dma_Ip_ValidateMultiCoreInit(void);
+Dma_Ip_ReturnType Dma_Ip_ValidateMultiCoreChannelCall(uint32 ChannelNumber);
+Dma_Ip_ReturnType Dma_Ip_ValidateMultiCoreInstanceCall(uint32 InstanceNumber);
 
-@remarks Covers 
-@remarks Implements 
-*/
-void SchM_Check_dio(void);
-#endif /*MCAL_TESTING_ENVIRONMENT*/
+#define MCL_STOP_SEC_CODE
+#include "Mcl_MemMap.h"
 
-extern void SchM_Enter_Dio_DIO_EXCLUSIVE_AREA_00(void);
-extern void SchM_Exit_Dio_DIO_EXCLUSIVE_AREA_00(void);
+#endif /* STD_ON == DMA_IP_MULTICORE_IS_AVAILABLE */
 
-extern void SchM_Enter_Dio_DIO_EXCLUSIVE_AREA_01(void);
-extern void SchM_Exit_Dio_DIO_EXCLUSIVE_AREA_01(void);
-
-
-
-
-#define RTE_STOP_SEC_CODE
-#include "Rte_MemMap.h"
+#endif /* #if (STD_ON == DMA_IP_IS_AVAILABLE) */
 
 #ifdef __cplusplus
 }
@@ -125,4 +132,4 @@ extern void SchM_Exit_Dio_DIO_EXCLUSIVE_AREA_01(void);
 
 /** @} */
 
-#endif /* SCHM_DIO_H */
+#endif  /* #ifndef DMA_IP_MULTICORE_H_ */
