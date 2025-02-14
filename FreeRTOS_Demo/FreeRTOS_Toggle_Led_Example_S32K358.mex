@@ -556,7 +556,7 @@
                      </config_set>
                   </instance>
                   <instance name="freertos" uuid="cbeafaf9-043e-425c-9763-7d188f98e6c3" type="freertos" type_id="freertos" mode="general" enabled="true" comment="" custom_name_enabled="false" editing_lock="false">
-                     <config_set name="freertos_driver" quick_selection="default_freeRTOS">
+                     <config_set name="freertos_driver">
                         <struct name="general_tab">
                            <struct name="configCPU_CLOCK_HZ">
                               <setting name="configCPU_CLOCK_MODE" value="default_clock"/>
@@ -564,7 +564,7 @@
                            </struct>
                            <setting name="configTICK_RATE_HZ" value="1000"/>
                            <setting name="configMAX_PRIORITIES" value="5"/>
-                           <setting name="configMINIMAL_STACK_SIZE" value="90"/>
+                           <setting name="configMINIMAL_STACK_SIZE" value="300"/>
                            <setting name="configMAX_TASK_NAME_LEN" value="10"/>
                            <setting name="configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY" value="1"/>
                            <setting name="configUSE_16_BIT_TICKS" value="false"/>
@@ -727,7 +727,7 @@
                                  <setting name="dmaLogicInstance_IdName" value="DMA_LOGIC_INST_0"/>
                                  <setting name="dmaLogicInstance_hwId" value="DMA_IP_HW_INST_0"/>
                                  <setting name="dmaLogicInstance_enDebug" value="false"/>
-                                 <setting name="dmaLogicInstance_enRoundRobin" value="false"/>
+                                 <setting name="dmaLogicInstance_enRoundRobin" value="true"/>
                                  <setting name="dmaLogicInstance_enHaltAfterError" value="false"/>
                                  <setting name="dmaLogicInstance_enChLinking" value="false"/>
                                  <setting name="dmaLogicInstance_enGlMasterIdReplication" value="false"/>
@@ -739,10 +739,10 @@
                                  <setting name="dmaLogicChannel_LogicName" value="DMA_LOGIC_CH_0"/>
                                  <setting name="dmaLogicChannel_HwInstId" value="DMA_IP_HW_INST_0"/>
                                  <setting name="dmaLogicChannel_HwChId" value="DMA_IP_HW_CH_0"/>
-                                 <setting name="dmaLogicChannel_InterruptCallback" value="NULL_PTR"/>
+                                 <setting name="dmaLogicChannel_InterruptCallback" value="DmaCh0_Callback"/>
                                  <setting name="dmaLogicChannel_ErrorInterruptCallback" value="NULL_PTR"/>
-                                 <setting name="dmaLogicChannel_EnableGlobalConfig" value="false"/>
-                                 <setting name="dmaLogicChannel_EnableTransferConfig" value="false"/>
+                                 <setting name="dmaLogicChannel_EnableGlobalConfig" value="true"/>
+                                 <setting name="dmaLogicChannel_EnableTransferConfig" value="true"/>
                                  <setting name="dmaLogicChannel_EnableScatterGather" value="false"/>
                                  <struct name="dmaLogicChannel_ConfigType">
                                     <setting name="Name" value="dmaLogicChannel_ConfigType"/>
@@ -773,7 +773,7 @@
                                        <setting name="Name" value="dmaLogicChannel_TransferConfigType"/>
                                        <struct name="dmaLogicChannelConfig_TransferControlType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferControlType"/>
-                                          <setting name="dmaLogicChannelConfig_enDmaMajorInterrupt" value="false"/>
+                                          <setting name="dmaLogicChannelConfig_enDmaMajorInterrupt" value="true"/>
                                           <setting name="dmaLogicChannelConfig_enDmaHalfMajorInterrupt" value="false"/>
                                           <setting name="dmaLogicChannelConfig_disDmaAutoHwReq" value="false"/>
                                           <setting name="dmaLogicChannelConfig_enEndOfPacketSignal" value="false"/>
@@ -782,16 +782,16 @@
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferSourceType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferSourceType"/>
-                                          <setting name="dmaLogicChannelConfig_SourceSignedOffsetType" value="0"/>
+                                          <setting name="dmaLogicChannelConfig_SourceSignedOffsetType" value="2"/>
                                           <setting name="dmaLogicChannelConfig_SourceLastAddressAdjustmentType" value="0"/>
-                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_1_BYTE"/>
+                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_2_BYTE"/>
                                           <setting name="dmaLogicChannelConfig_SourceModuloType" value="0"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferDestinationType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferDestinationType"/>
-                                          <setting name="dmaLogicChannelConfig_DestinationSignedOffsetType" value="0"/>
+                                          <setting name="dmaLogicChannelConfig_DestinationSignedOffsetType" value="2"/>
                                           <setting name="dmaLogicChannelConfig_DestinationLastAddressAdjustmentType" value="0"/>
-                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_1_BYTE"/>
+                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_2_BYTE"/>
                                           <setting name="dmaLogicChannelConfig_DestinationModuloType" value="0"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferMinorLoopType">
@@ -801,13 +801,13 @@
                                           <setting name="dmaLogicChannelConfig_OffsetValueType" value="0"/>
                                           <setting name="dmaLogicChannelConfig_enMinorLoopLinkCh" value="false"/>
                                           <setting name="dynamic_dmaLogicChannelConfig_MinorLoopLinkChValueType" value="/Dma_Ip/Dma/MclConfig/dmaLogicChannel_Type_0"/>
-                                          <setting name="dmaLogicChannelConfig_MinorLoopSizeType" value="0"/>
+                                          <setting name="dmaLogicChannelConfig_MinorLoopSizeType" value="24"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferMajorLoopType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferMajorLoopType"/>
                                           <setting name="dmaLogicChannelConfig_enMajorLoopLinkCh" value="false"/>
                                           <setting name="dynamic_dmaLogicChannelConfig_MajorLoopLinkChValueType" value="/Dma_Ip/Dma/MclConfig/dmaLogicChannel_Type_0"/>
-                                          <setting name="dmaLogicChannelConfig_MajorLoopCountType" value="0"/>
+                                          <setting name="dmaLogicChannelConfig_MajorLoopCountType" value="1"/>
                                        </struct>
                                     </struct>
                                     <struct name="dmaLogicChannel_ScatterGatherConfigType">
@@ -842,6 +842,13 @@
                                     <setting name="IsrEnabled" value="true"/>
                                     <setting name="IsrPriority" value="1"/>
                                     <setting name="IsrHandler" value="LPUART_UART_IP_3_IRQHandler"/>
+                                 </struct>
+                                 <struct name="1">
+                                    <setting name="Name" value="PlatformIsrConfig_1"/>
+                                    <setting name="IsrName" value="DMATCD0_IRQn"/>
+                                    <setting name="IsrEnabled" value="true"/>
+                                    <setting name="IsrPriority" value="1"/>
+                                    <setting name="IsrHandler" value="undefined_handler"/>
                                  </struct>
                               </array>
                            </struct>

@@ -60,7 +60,7 @@ static int nxps32k358_lpuart_can_receive(void *opaque) {
     return 1;
 }
 
-static void nxps32k358_update_irq(NXPS32K358LPUartState *s) {
+static void nxps32k358_lpuart_update_irq(NXPS32K358LPUartState *s) {
     uint32_t mask = s->lpuart_stat & s->lpuart_control;
 
     if (mask &
@@ -85,7 +85,7 @@ static void nxps32k358_lpuart_receive(void *opaque, const uint8_t *buf,
 
     s->lpuart_stat |= R_STAT_RDRF_MASK;
 
-    nxps32k358_update_irq(s);
+    nxps32k358_lpuart_update_irq(s);
 
     DB_PRINT("Receiving: %c\n", s->lpuart_data);
 }
@@ -123,7 +123,7 @@ static void nxps32k358_lpuart_reset(DeviceState *dev) {
         s->lpuart_tdb[i] = LPUART_TDB_RESET;
     }
 
-    nxps32k358_update_irq(s);
+    nxps32k358_lpuart_update_irq(s);
 }
 
 static void nxps32k358_lpuart_update_params(NXPS32K358LPUartState *s) {
@@ -147,13 +147,15 @@ static uint64_t nxps32k358_lpuart_read(void *opaque, hwaddr addr,
         case A_STAT:
             retvalue = s->lpuart_stat;
             return retvalue;
+        case A_GLOBAL:
+            return s->lpuart_global;
         case A_DATA:
             DB_PRINT_READ("Value: 0x%" PRIx32 ", %c\n", s->lpuart_data,
                           (char)s->lpuart_data);
             retvalue = s->lpuart_data;
             s->lpuart_stat &= ~R_STAT_RDRF_MASK;
             qemu_chr_fe_accept_input(&s->chr);
-            nxps32k358_update_irq(s);
+            nxps32k358_lpuart_update_irq(s);
             return retvalue;
         case A_CONTROL:
             return s->lpuart_control;
@@ -178,8 +180,14 @@ static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
     DB_PRINT("Write 0x%" PRIx32 ", 0x%" HWADDR_PRIx "\n", value, addr);
 
     switch (addr) {
+        case A_GLOBAL:
+            s->lpuart_global = value;
+            if (value & R_GLOBAL_RST_MASK) {
+                nxps32k358_lpuart_reset(DEVICE(s));
+            }
+            return;
         case A_STAT:
-            nxps32k358_update_irq(s);
+            nxps32k358_lpuart_update_irq(s);
             return;
         case A_DATA:
             bool is_7bit = s->lpuart_control & R_CONTROL_M7_MASK;
@@ -195,11 +203,11 @@ static void nxps32k358_lpuart_write(void *opaque, hwaddr addr, uint64_t val64,
             }
             ch = value;
             qemu_chr_fe_write_all(&s->chr, &ch, 1);
-            nxps32k358_update_irq(s);
+            nxps32k358_lpuart_update_irq(s);
             return;
         case A_CONTROL:
             s->lpuart_control = value;
-            nxps32k358_update_irq(s);
+            nxps32k358_lpuart_update_irq(s);
             return;
         case A_BAUD:
             s->lpuart_baud = value;

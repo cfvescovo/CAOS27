@@ -142,6 +142,7 @@ extern const Dma_Ip_LogicInstanceConfigType Dma_Ip_xLogicInstanceResetConfig;
 #define MCL_START_SEC_CODE
 /* @violates @ref Mcl_Dma_h_REF_1 MISRA 2012 Required Directive 4.10, Precautions shall be taken in order to prevent the contents of a header file being included more than once. */
 #include "Mcl_MemMap.h"
+
 /* DMA IRQ Handlers */
 ISR(Dma0_Ch0_IRQHandler);
 ISR(Dma0_Ch1_IRQHandler);

@@ -1,7 +1,7 @@
 /*==================================================================================================
 *   Project              : RTD AUTOSAR 4.7
 *   Platform             : CORTEXM
-*   Peripheral           : DMA,CACHE,TRGMUX,LCU,EMIOS,FLEXIO
+*   Peripheral           : SIUL2
 *   Dependencies         : none
 *
 *   Autosar Version      : 4.7.0
@@ -11,7 +11,6 @@
 *   Build Version        : S32K3_RTD_3_0_0_D2303_ASR_REL_4_7_REV_0000_20230331
 *
 *   Copyright 2020 - 2023 NXP Semiconductors
-*   
 *
 *   NXP Confidential. This software is owned or controlled by NXP and may only be
 *   used strictly in accordance with the applicable license terms. By expressly
@@ -21,12 +20,19 @@
 *   bound by the applicable license terms, then you may not retain, install,
 *   activate or otherwise use the software.
 ==================================================================================================*/
-#ifndef DMA_IP_PBCFG_H
-#define DMA_IP_PBCFG_H
-    
+
+#ifndef IGF_PORT_IP_CFG_H
+#define IGF_PORT_IP_CFG_H
+
+/**
+*   @file    Igf_Port_Ip_Cfg.h
+*
+*   @addtogroup Port_CFG
+*   @{
+*/
+
 #ifdef __cplusplus
-extern "C"
-{
+extern "C"{
 #endif
 
 /*==================================================================================================
@@ -35,24 +41,20 @@ extern "C"
 * 2) needed interfaces from external units
 * 3) internal and external interfaces from this unit
 ==================================================================================================*/
-
 /*==================================================================================================
 *                              SOURCE FILE VERSION INFORMATION
 ==================================================================================================*/
-#define DMA_IP_PBCFG_MODULE_ID                     255
-#define DMA_IP_PBCFG_VENDOR_ID                     43
-#define DMA_IP_PBCFG_AR_RELEASE_MAJOR_VERSION      4
-#define DMA_IP_PBCFG_AR_RELEASE_MINOR_VERSION      7
-#define DMA_IP_PBCFG_AR_RELEASE_REVISION_VERSION   0
-#define DMA_IP_PBCFG_SW_MAJOR_VERSION              3
-#define DMA_IP_PBCFG_SW_MINOR_VERSION              0
-#define DMA_IP_PBCFG_SW_PATCH_VERSION              0
-    
+#define IGF_PORT_IP_VENDOR_ID_CFG_H                       43
+#define IGF_PORT_IP_AR_RELEASE_MAJOR_VERSION_CFG_H        4
+#define IGF_PORT_IP_AR_RELEASE_MINOR_VERSION_CFG_H        7
+#define IGF_PORT_IP_AR_RELEASE_REVISION_VERSION_CFG_H     0
+#define IGF_PORT_IP_SW_MAJOR_VERSION_CFG_H                3
+#define IGF_PORT_IP_SW_MINOR_VERSION_CFG_H                0
+#define IGF_PORT_IP_SW_PATCH_VERSION_CFG_H                0
 
 /*==================================================================================================
-                                      FILE VERSION CHECKS
+*                                     FILE VERSION CHECKS
 ==================================================================================================*/
-
 /*==================================================================================================
 *                                          CONSTANTS
 ==================================================================================================*/
@@ -60,7 +62,6 @@ extern "C"
 /*==================================================================================================
 *                                      DEFINES AND MACROS
 ==================================================================================================*/
-
 /*==================================================================================================
 *                                             ENUMS
 ==================================================================================================*/
@@ -68,7 +69,6 @@ extern "C"
 /*==================================================================================================
 *                                STRUCTURES AND OTHER TYPEDEFS
 ==================================================================================================*/
-
 
 /*==================================================================================================
 *                                GLOBAL VARIABLE DECLARATIONS
@@ -78,21 +78,11 @@ extern "C"
 *                                    FUNCTION PROTOTYPES
 ==================================================================================================*/
 
-#define MCL_START_SEC_CODE
-/* @violates @ref Mcl_Dma_h_REF_1 MISRA 2012 Required Directive 4.10, Precautions shall be taken in order to prevent the contents of a header file being included more than once. */
-#include "Mcl_MemMap.h"
 
-void DmaCh0_Callback(void);
-
-#define MCL_STOP_SEC_CODE
-/* @violates @ref Mcl_Dma_h_REF_1 MISRA 2012 Required Directive 4.10, Precautions shall be taken in order to prevent the contents of a header file being included more than once. */
-#include "Mcl_MemMap.h"
 #ifdef __cplusplus
 }
 #endif
 
-#endif
-/*==================================================================================================
- *                                        END OF FILE
-==================================================================================================*/
+/** @} */
 
+#endif /* IGF_PORT_IP_CFG_H */

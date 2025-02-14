@@ -19,6 +19,33 @@
 
 #define MAX_SIZE 64
 
+static void nxps32k358_edma_tcd_update_irq(NXPS32K358EDMAState *s, int tcd_no) {
+    struct NXPS32K358EDMATCDState *ch = &s->tcd[tcd_no];
+
+    // If inthalf is set and if citer >= biter/2, interrupt request
+    if (FIELD_EX32(ch->tcd_csr, TCD_CSR, INTHALF) &&
+        FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) >=
+            FIELD_EX16(ch->tcd_biter, TCD_BITER, BITER) / 2) {
+        ch->ch_int |= R_CH_INT_INT_MASK;
+    }
+
+    // If intmajor is set and if citer == 0, interrupt request
+    if (FIELD_EX32(ch->tcd_csr, TCD_CSR, INTMAJOR) &&
+        FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) == 0) {
+        ch->ch_int |= R_CH_INT_INT_MASK;
+    }
+
+    // Error irq not implemented (EEI)
+
+    if (ch->ch_int & R_CH_INT_INT_MASK) {
+        s->edma_int |= 1 << tcd_no;
+        qemu_set_irq(ch->irq, 1);
+    } else {
+        s->edma_int &= ~(1 << tcd_no);
+        qemu_set_irq(ch->irq, 0);
+    }
+}
+
 static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
     uint8_t buf[MAX_SIZE];
     struct NXPS32K358EDMATCDState *ch = &s->tcd[tcd_no];
@@ -26,8 +53,8 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
     uint32_t saddr = 0;
     uint32_t daddr = 0;
 
-    uint32_t ssize = FIELD_EX32(ch->tcd_attr, TCD_ATTR, SSIZE);
-    uint32_t dsize = FIELD_EX32(ch->tcd_attr, TCD_ATTR, DSIZE);
+    uint32_t ssize = FIELD_EX16(ch->tcd_attr, TCD_ATTR, SSIZE);
+    uint32_t dsize = FIELD_EX16(ch->tcd_attr, TCD_ATTR, DSIZE);
 
     // These values are reserved
     assert(ssize != 0b111);
@@ -42,7 +69,7 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
     uint32_t max_size = ssize > dsize ? ssize : dsize;
 
     // Major Loop
-    if (FIELD_EX32(ch->tcd_citer, TCD_CITER, CITER) > 0) {
+    if (FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) > 0) {
         saddr = ch->tcd_saddr;
         daddr = ch->tcd_daddr;
 
@@ -67,20 +94,22 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
         ch->tcd_daddr = daddr;
 
         // Decrement current iteration counter
-        uint32_t next_citer = FIELD_EX32(ch->tcd_citer, TCD_CITER, CITER) - 1;
-        ch->tcd_citer = FIELD_DP32(ch->tcd_citer, TCD_CITER, CITER, next_citer);
+        uint32_t next_citer = FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) - 1;
+        ch->tcd_citer = FIELD_DP16(ch->tcd_citer, TCD_CITER, CITER, next_citer);
 
         // Disable ACTIVE after first minor loop is completed
         ch->ch_csr &= ~R_CH_CSR_ACTIVE_MASK;
+
+        nxps32k358_edma_tcd_update_irq(s, tcd_no);
     }
 
-    if (FIELD_EX32(ch->tcd_citer, TCD_CITER, CITER) == 0) {
+    if (FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) == 0) {
         uint8_t esda = FIELD_EX32(ch->tcd_csr, TCD_CSR, ESDA);
         if (esda) {
             uint32_t slast_sda =
                 FIELD_EX32(ch->tcd_slast_sda, TCD_SLAST_SDA, SLAST_SDA);
-            cpu_physical_memory_write(slast_sda, (void *)ch->tcd_daddr,
-                                      sizeof(slast_sda));
+            cpu_physical_memory_write(
+                slast_sda, (void *)(uintptr_t)ch->tcd_daddr, sizeof(slast_sda));
         } else {
             ch->tcd_saddr =
                 ch->tcd_saddr +
@@ -94,8 +123,8 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
             uint8_t next_tcd_data[32];
             cpu_physical_memory_read(dlast_sga, next_tcd_data, 32);
 
-            assert(((uint32_t)&ch->tcd_biter + sizeof(ch->tcd_biter) -
-                    (uint32_t)&ch->tcd_saddr) == 32);
+            /* assert(((uint32_t)&ch->tcd_biter + sizeof(ch->tcd_biter) -
+                    (uint32_t)&ch->tcd_saddr) == 32); */
             memcpy(&ch->tcd_saddr, next_tcd_data, 32);
         } else {
             ch->tcd_daddr =
@@ -103,8 +132,8 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
                 FIELD_EX32(ch->tcd_dlast_sga, TCD_DLAST_SGA, DLAST_SGA);
         }
 
-        FIELD_DP32(ch->tcd_citer, TCD_CITER, CITER,
-                   FIELD_EX32(ch->tcd_biter, TCD_BITER, BITER));
+        ch->tcd_citer = FIELD_DP16(ch->tcd_citer, TCD_CITER, CITER,
+                                   FIELD_EX16(ch->tcd_biter, TCD_BITER, BITER));
 
         ch->ch_csr |= R_CH_CSR_DONE_MASK;
         ch->ch_int |= R_CH_INT_INT_MASK;
@@ -117,7 +146,6 @@ static void nxps32k358_edma_arbitrate(NXPS32K358EDMAState *s) {
     // This is a round-robin
     for (int i = 0; i < EDMA_CHANNELS; i++) {
         int j = (i + offset) % EDMA_CHANNELS;
-
         if (s->tcd[j].tcd_csr & R_TCD_CSR_START_MASK) {
             s->tcd[j].ch_csr &= ~R_CH_CSR_DONE_MASK;
             s->tcd[j].tcd_csr &= ~R_TCD_CSR_START_MASK;
@@ -211,8 +239,8 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
             ch->ch_es |= value & R_CH_ES_ERR_MASK;
             break;
         case A_CH_INT:
-            ch->ch_int &= ~R_CH_INT_INT_MASK;
-            ch->ch_int |= value & R_CH_INT_INT_MASK;
+            if (value & R_CH_INT_INT_MASK) ch->ch_int &= ~R_CH_INT_INT_MASK;
+            nxps32k358_edma_tcd_update_irq(s, c);
             break;
         case NO_SUPPORT A_CH_SBR:
         case NO_SUPPORT A_CH_PRI:
@@ -244,8 +272,7 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
         case A_TCD_CITER:
             // no support for channel linking
             assert((value & R_TCD_CITER_ELINK_MASK) == 0);
-            assert(FIELD_EX32(ch->tcd_citer, TCD_CITER, CITER) ==
-                   FIELD_EX32(ch->tcd_biter, TCD_BITER, BITER));
+            assert(value == FIELD_EX32(ch->tcd_biter, TCD_BITER, BITER));
             ch->tcd_citer = value;
             break;
         case A_TCD_DLAST_SGA:
@@ -254,6 +281,7 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
         case A_TCD_CSR:
             // no support for bwc, don't care
             assert((value & R_TCD_CSR_MAJORELINK_MASK) == 0);
+            ch->tcd_csr = value;
             if (value & R_TCD_CSR_START_MASK) {
                 nxps32k358_edma_arbitrate(s);
             }
@@ -405,7 +433,6 @@ static const MemoryRegionOps nxps32k358_edma12_ops = {
 
 static void nxps32k358_edma_init(Object *obj) {
     NXPS32K358EDMAState *s = NXPS32K358_EDMA(obj);
-    int n;
 
     memory_region_init_io(&s->mmio0, OBJECT(s), &nxps32k358_edma0_ops, s,
                           TYPE_NXPS32K358_EDMA, 0x4000 * 13);
@@ -416,7 +443,7 @@ static void nxps32k358_edma_init(Object *obj) {
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->mmio12);
 
     for (int i = 0; i < EDMA_CHANNELS; i++) {
-        sysbus_init_irq(SYS_BUS_DEVICE(s), &s->tcd[n].irq);
+        sysbus_init_irq(SYS_BUS_DEVICE(s), &s->tcd[i].irq);
     }
 }
 
@@ -430,6 +457,7 @@ static void nxps32k358_edma_reset(DeviceState *dev) {
     for (int i = 0; i < EDMA_CHANNELS; i++) {
         s->edma_chn_grpri[i] = EDMA_CHN_GRPRI_RESET;
         nxps32k358_edma_tcd_reset(&s->tcd[i]);
+        nxps32k358_edma_tcd_update_irq(s, i);
     }
 }
 

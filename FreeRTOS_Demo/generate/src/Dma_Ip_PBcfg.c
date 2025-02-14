@@ -122,7 +122,7 @@ const Dma_Ip_LogicInstanceConfigType LogicInstance0ConfigPB =
 		/* uint8 hwInst;       */ DMA_IP_HW_INST_0,
 	},
 	/* boolean EnDebug; */                 (boolean)FALSE,
-	/* boolean EnRoundRobin; */            (boolean)FALSE,
+	/* boolean EnRoundRobin; */            (boolean)TRUE,
 	/* boolean EnHaltAfterError; */        (boolean)FALSE,
 	/* boolean EnChLinking; */             (boolean)FALSE,
 	/* boolean EnGlMasterIdReplication; */ (boolean)FALSE,
@@ -146,6 +146,69 @@ const Dma_Ip_LogicInstanceConfigType * const Dma_Ip_paxLogicInstanceConfigArrayP
 
 
 /* DMA Logic Channel Configurations */
+const Dma_Ip_GlobalConfigType LogicChannel0GlobalConfigPB =
+{
+	{
+		/* boolean EnMasterIdReplication; */ (boolean)FALSE,
+		/* boolean EnBufferedWrites; */      (boolean)FALSE,
+	}, /* Control */
+	{
+		/* boolean EnRequest; */             (boolean)FALSE,
+	}, /* Request */
+	{
+		/* boolean EnErrorInt; */            (boolean)FALSE,
+	}, /* Interrupt */
+	{
+		/* uint8 SwapSize; */                (uint8)0U,
+	}, /* Swap */
+	{
+		/* uint8 Group; */                   DMA_IP_GROUP_PRIO0,
+		/* uint8 Level; */                   DMA_IP_LEVEL_PRIO0,
+		/* boolean EnPreemption; */          (boolean)FALSE,
+		/* boolean DisPreempt; */            (boolean)FALSE,
+	}, /* Priority */
+};
+const Dma_Ip_TransferConfigType LogicChannel0TransferConfigPB =
+{
+	{
+		/* uint32 ScatterGatherAddr; */    0U,
+		/* uint32 DestinationStoreAddr; */ 0U,
+		/* uint8 BandwidthControl; */      DMA_IP_BWC_ENGINE_NO_STALL,
+		/* uint8 TransferModeControl; */   0U,
+		/* boolean EnStart; */             (boolean)FALSE,
+		/* boolean EnMajorInt; */          (boolean)TRUE,
+		/* boolean EnHalfMajorInt; */      (boolean)FALSE,
+		/* boolean DisAutoHwRequest; */    (boolean)FALSE,
+		/* boolean EnEndOfPacketSignal; */ (boolean)FALSE
+	}, /* Control */
+	{
+		/* uint32 addr; */         0U,
+		/* sint32 lastAddrAdj; */  0,
+		/* sint16 signedOffset; */ 2,
+		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_2_BYTE,
+		/* uint8 modulo; */        0U,
+	}, /* Source */
+	{
+		/* uint32 addr; */         0U,
+		/* sint32 lastAddrAdj; */  0,
+		/* sint16 signedOffset; */ 2,
+		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_2_BYTE,
+		/* uint8 modulo; */        0U,
+	}, /* Destination */
+	{
+		/* uint32 size; */         24U,
+		/* sint32 offset; */       0,
+		/* uint8 LogicLinkCh; */   0U,
+		/* boolean EnLink; */      (boolean)FALSE,
+		/* boolean EnSrcOffset; */ (boolean)FALSE,
+		/* boolean EnDstOffset; */ (boolean)FALSE,
+	}, /* MinorLoop */
+	{
+		/* uint16 count; */        1U,
+		/* uint8 LogicLinkCh; */   0U,
+		/* boolean EnLink; */      (boolean)FALSE,
+	}, /* MajorLoop */
+};
 
 #define MCL_STOP_SEC_CONFIG_DATA_UNSPECIFIED
 /* @violates @ref Mcl_Dma_h_REF_1 MISRA 2012 Required Directive 4.10, Precautions shall be taken in order to prevent the contents of a header file being included more than once. */
@@ -172,6 +235,8 @@ const Dma_Ip_LogicInstanceConfigType * const Dma_Ip_paxLogicInstanceConfigArrayP
 /* @violates @ref Mcl_Dma_h_REF_1 MISRA 2012 Required Directive 4.10, Precautions shall be taken in order to prevent the contents of a header file being included more than once. */
 #include "Mcl_MemMap.h"
 
+extern void DmaCh0_Callback(void);
+
 const Dma_Ip_LogicChannelConfigType LogicChannel0ConfigPB = 
 {
 		{
@@ -179,11 +244,11 @@ const Dma_Ip_LogicChannelConfigType LogicChannel0ConfigPB =
 				/* uint8 HwVersId; */                 DMA_IP_HARDWARE_VERSION_3,
 				/* uint8 HwInst; */                   DMA_IP_HW_INST_0,
 				/* uint8 HwChId; */                   0U,
-				/* Dma_Ip_Callback IntCallback; */    NULL_PTR,
+				/* Dma_Ip_Callback IntCallback; */    DmaCh0_Callback,
 				/* Dma_Ip_Callback ErrIntCallback; */ NULL_PTR,
 		}, /* Dma_Ip_LogicChannelIdType */
-		NULL_PTR,
-		NULL_PTR,
+		&LogicChannel0GlobalConfigPB,
+		&LogicChannel0TransferConfigPB,
 		NULL_PTR,
 };
 
