@@ -8,7 +8,7 @@
 #include "hw/arm/nxps32k358_soc.h"
 #include "hw/qdev-clock.h"
 
-#define SYSCLK_FRQ 240000000ULL
+#define SYSCLK_FRQ 160000000ULL
 
 struct NXPS32K3X8EVBMachineState {
     MachineState parent_obj;
