@@ -691,8 +691,12 @@
                                     <setting name="CustomBaudrateMantissa" value="1"/>
                                     <setting name="CustomBaudrateDivisor" value="4"/>
                                     <setting name="UartInteruptDmaMethod" value="LPUART_UART_IP_USING_INTERRUPTS"/>
-                                    <array name="UartDmaTxChannelRef"/>
-                                    <array name="UartDmaRxChannelRef"/>
+                                    <array name="UartDmaTxChannelRef">
+                                       <setting name="0" value="/Dma_Ip/Dma/MclConfig/dmaLogicChannel_Type_1"/>
+                                    </array>
+                                    <array name="UartDmaRxChannelRef">
+                                       <setting name="0" value="/Dma_Ip/Dma/MclConfig/dmaLogicChannel_Type_2"/>
+                                    </array>
                                     <setting name="UartParityType" value="LPUART_UART_IP_PARITY_DISABLED"/>
                                     <setting name="UartStopBitNumber" value="LPUART_UART_IP_ONE_STOP_BIT"/>
                                     <setting name="UartWordLength" value="LPUART_UART_IP_8_BITS_PER_CHAR"/>
@@ -782,16 +786,16 @@
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferSourceType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferSourceType"/>
-                                          <setting name="dmaLogicChannelConfig_SourceSignedOffsetType" value="2"/>
+                                          <setting name="dmaLogicChannelConfig_SourceSignedOffsetType" value="4"/>
                                           <setting name="dmaLogicChannelConfig_SourceLastAddressAdjustmentType" value="0"/>
-                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_2_BYTE"/>
+                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_4_BYTE"/>
                                           <setting name="dmaLogicChannelConfig_SourceModuloType" value="0"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferDestinationType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferDestinationType"/>
-                                          <setting name="dmaLogicChannelConfig_DestinationSignedOffsetType" value="2"/>
+                                          <setting name="dmaLogicChannelConfig_DestinationSignedOffsetType" value="4"/>
                                           <setting name="dmaLogicChannelConfig_DestinationLastAddressAdjustmentType" value="0"/>
-                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_2_BYTE"/>
+                                          <setting name="dmaTransferConfig_TransferSizeType" value="DMA_IP_TRANSFER_SIZE_4_BYTE"/>
                                           <setting name="dmaLogicChannelConfig_DestinationModuloType" value="0"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferMinorLoopType">
@@ -801,7 +805,7 @@
                                           <setting name="dmaLogicChannelConfig_OffsetValueType" value="0"/>
                                           <setting name="dmaLogicChannelConfig_enMinorLoopLinkCh" value="false"/>
                                           <setting name="dynamic_dmaLogicChannelConfig_MinorLoopLinkChValueType" value="/Dma_Ip/Dma/MclConfig/dmaLogicChannel_Type_0"/>
-                                          <setting name="dmaLogicChannelConfig_MinorLoopSizeType" value="24"/>
+                                          <setting name="dmaLogicChannelConfig_MinorLoopSizeType" value="128"/>
                                        </struct>
                                        <struct name="dmaLogicChannelConfig_TransferMajorLoopType">
                                           <setting name="Name" value="dmaLogicChannelConfig_TransferMajorLoopType"/>

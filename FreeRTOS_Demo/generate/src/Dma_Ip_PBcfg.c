@@ -184,19 +184,19 @@ const Dma_Ip_TransferConfigType LogicChannel0TransferConfigPB =
 	{
 		/* uint32 addr; */         0U,
 		/* sint32 lastAddrAdj; */  0,
-		/* sint16 signedOffset; */ 2,
-		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_2_BYTE,
+		/* sint16 signedOffset; */ 4,
+		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_4_BYTE,
 		/* uint8 modulo; */        0U,
 	}, /* Source */
 	{
 		/* uint32 addr; */         0U,
 		/* sint32 lastAddrAdj; */  0,
-		/* sint16 signedOffset; */ 2,
-		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_2_BYTE,
+		/* sint16 signedOffset; */ 4,
+		/* uint8 transferSize; */  DMA_IP_TRANSFER_SIZE_4_BYTE,
 		/* uint8 modulo; */        0U,
 	}, /* Destination */
 	{
-		/* uint32 size; */         24U,
+		/* uint32 size; */         128U,
 		/* sint32 offset; */       0,
 		/* uint8 LogicLinkCh; */   0U,
 		/* boolean EnLink; */      (boolean)FALSE,
