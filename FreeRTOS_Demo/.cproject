@@ -62,7 +62,6 @@
 									<listOptionValue builtIn="false" value="S32K358"/>
 									<listOptionValue builtIn="false" value="CPU_S32K358"/>
 									<listOptionValue builtIn="false" value="CPU_CORTEX_M7"/>
-									<listOptionValue builtIn="false" value="VIRT_ENV"/>
 									<listOptionValue builtIn="false" value="MPU_ENABLE"/>
 								</option>
 								<option id="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.instructionset.688547646" name="Instruction set" superClass="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.instructionset" useByScannerDiscovery="true" value="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.instructionset.thumb" valueType="enumerated"/>
