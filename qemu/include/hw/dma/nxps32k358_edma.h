@@ -1,3 +1,32 @@
+/*
+ * NXPS32K358 EDMA
+ *
+ * Copyright (c) 2024-2025 CAOS group 27: C. F. Vescovo, C. Sanna, F. Stella
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @file nxps32k358_edma.h
+ * @brief Definition of the NXPS32K358 eDMA module.
+ */
+
 #ifndef NXP_S32K358_EDMA_H
 #define NXP_S32K358_EDMA_H
 
@@ -52,6 +81,42 @@ static inline uint32_t R_EDMA_CHN_GRPRI_GRPRI_MASK(int n) {
 #define TYPE_NXPS32K358_EDMA "nxps32k358-edma"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358EDMAState, NXPS32K358_EDMA)
 
+/**
+ * @struct NXPS32K358EDMAState
+ * @brief Represents the state of the NXP S32K358 eDMA controller.
+ *
+ * This structure holds the state information for the NXP S32K358 eDMA
+ * controller, including memory-mapped I/O regions, control and status
+ * registers, error status, interrupt status, hardware request status, channel
+ * group priority, and transfer control descriptors.
+ *
+ * @var NXPS32K358EDMAState::parent_obj
+ * The parent system bus device.
+ *
+ * @var NXPS32K358EDMAState::mmio0
+ * Memory-mapped I/O region 0.
+ *
+ * @var NXPS32K358EDMAState::mmio12
+ * Memory-mapped I/O region 12.
+ *
+ * @var NXPS32K358EDMAState::edma_csr
+ * Control and status register for the eDMA.
+ *
+ * @var NXPS32K358EDMAState::edma_es
+ * Error status register (read-only).
+ *
+ * @var NXPS32K358EDMAState::edma_int
+ * Interrupt status register (read-only).
+ *
+ * @var NXPS32K358EDMAState::edma_hrs
+ * Hardware request status register (read-only).
+ *
+ * @var NXPS32K358EDMAState::edma_chn_grpri
+ * Channel group priority registers.
+ *
+ * @var NXPS32K358EDMAState::tcd
+ * Transfer control descriptors for each eDMA channel.
+ */
 struct NXPS32K358EDMAState {
     SysBusDevice parent_obj;
     MemoryRegion mmio0;

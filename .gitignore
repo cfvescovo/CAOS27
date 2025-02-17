@@ -3,3 +3,4 @@
 *.d
 .gdb_history
 Debug_FLASH/
+docs/qemu/

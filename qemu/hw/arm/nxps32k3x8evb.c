@@ -1,3 +1,32 @@
+/*
+ * NXPS32K3X8EVB board emulation
+ *
+ * Copyright (c) 2024-2025 CAOS group 27: C. F. Vescovo, C. Sanna, F. Stella
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @file nxps32k3x8evb.c
+ * @brief Implementation of the NXPS32K3X8EVB board emulation.
+ */
+
 #include "qemu/osdep.h"
 #include "qemu/units.h"
 #include "qapi/error.h"
@@ -5,31 +34,21 @@
 #include "hw/arm/armv7m.h"
 #include "qom/object.h"
 #include "hw/boards.h"
-#include "hw/arm/nxps32k358_soc.h"
+#include "hw/arm/nxps32k3x8evb.h"
 #include "hw/qdev-clock.h"
 
-#define SYSCLK_FRQ 160000000ULL
-
-struct NXPS32K3X8EVBMachineState {
-    MachineState parent_obj;
-    NXPS32K358State s32k;
-
-    Clock *sysclk;
-};
-typedef struct NXPS32K3X8EVBMachineState NXPS32K3X8EVBMachineState;
-
-struct NXPS32K3X8EVBMachineClass {
-    MachineClass parent_class;
-};
-typedef struct NXPS32K3X8EVBMachineClass NXPS32K3X8EVBMachineClass;
-
-#define TYPE_NXPS32K3X8EVB_MACHINE MACHINE_TYPE_NAME("nxps32k3x8evb")
-
-DECLARE_OBJ_CHECKERS(NXPS32K3X8EVBMachineState, NXPS32K3X8EVBMachineClass,
-                     NXPS32K3X8EVB_MACHINE, TYPE_NXPS32K3X8EVB_MACHINE)
-
-// Here we initialize the board
-// The generic MachineState is passed by QEMU
+/**
+ * @brief Initialize the NXP S32K3X8EVB board.
+ *
+ * This function initializes the NXP S32K3X8EVB board by performing the
+ * following steps:
+ * 1. Casts the generic MachineState to NXPS32K3X8EVBMachineState.
+ * 2. Initializes the system clock and sets its frequency.
+ * 3. Initializes the SoC (System on Chip) and connects the system clock to it.
+ * 4. Loads the kernel image into the ARM CPU's flash memory.
+ *
+ * @param machine The generic MachineState passed by QEMU.
+ */
 static void NXPS32K3X8EVB_init(MachineState *machine) {
     // Cast the NXP machine from the generic machine
     NXPS32K3X8EVBMachineState *m_state = NXPS32K3X8EVB_MACHINE(machine);
@@ -50,39 +69,43 @@ static void NXPS32K3X8EVB_init(MachineState *machine) {
                        CODE_FLASH_BASE_ADDRESS, CODE_FLASH_BLOCK_SIZE * 4);
 }
 
-// Generic Object is passed by QEMU
+/**
+ * @brief Initializes the NXPS32K3X8EVB board class.
+ *
+ * @param oc The ObjectClass to initialize, provided by QEMU.
+ * @param data Additional data for initialization (unused).
+ *
+ * This function sets up the MachineClass for the NXPS32K3X8EVB-Q289 board.
+ * It provides a description of the board, specifies the initialization
+ * function, and defines CPU attributes such as the default CPU type and
+ * the number of CPUs. Additionally, it indicates that the board does not
+ * have any media drives (floppy or CD-ROM) and does not support parallel
+ * threads. In our implementation we have only one core; in the real thing there
+ * are 2 cores.
+ */
 static void NXPS32K3X8EVB_class_init(ObjectClass *oc, void *data) {
-    // The generic machine class from object
     MachineClass *mc = MACHINE_CLASS(oc);
     mc->desc = "S32K3X8EVB-Q289 board";
 
     static const char *const valid_cpu_types[] = {
         ARM_CPU_TYPE_NAME("cortex-m7"), NULL};
 
-    // Notice that we tell QEMU what function is used to initialize our board
-    // here.
     mc->init = NXPS32K3X8EVB_init;
-    // Define CPU attributes
     mc->default_cpus = 1;
     mc->default_cpu_type = ARM_CPU_TYPE_NAME("cortex-m7");
     mc->valid_cpu_types = valid_cpu_types;
     mc->min_cpus = mc->default_cpus;
     mc->max_cpus = mc->default_cpus;
-    // Our board does not have any media drive
     mc->no_floppy = 1;
     mc->no_cdrom = 1;
-    // We also will not have threads
     mc->no_parallel = 1;
 }
 
 static const TypeInfo NXPS32K3X8EVB_machine_types[] = {{
-    // Notice that this is the TYPE that we defined above.
     .name = TYPE_NXPS32K3X8EVB_MACHINE,
-    // Our machine is a direct child of QEMU generic machine
     .parent = TYPE_MACHINE,
     .instance_size = sizeof(NXPS32K3X8EVBMachineState),
     .class_size = sizeof(NXPS32K3X8EVBMachineClass),
-    // We need to registers the class inti function
     .class_init = NXPS32K3X8EVB_class_init,
 }};
 DEFINE_TYPES(NXPS32K3X8EVB_machine_types)

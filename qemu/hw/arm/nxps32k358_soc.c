@@ -1,8 +1,7 @@
 /*
  * NXPS32K358 SoC
  *
- * Copyright (c) 2021 Alexandre Iooss <erdnaxe@crans.org>
- * Copyright (c) 2014 Alistair Francis <alistair@alistair23.me>
+ * Copyright (c) 2024-2025 CAOS group 27: C. F. Vescovo, C. Sanna, F. Stella
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +22,11 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file nxps32k358_soc.c
+ * @brief Implementation of the NXP S32K358 SoC.
+ */
+
 #include "qemu/osdep.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
@@ -36,6 +40,13 @@
 #include "hw/misc/unimp.h"
 #include "sysemu/sysemu.h"
 
+/**
+ * @brief Creates unimplemented devices for each device listed in the
+ * documentation.
+ *
+ * We don't care if we actually implement the devices later on
+ * since unimplemented devices have the lowest priority in QEMU
+ */
 static void create_unimplemented_devices(void) {
     create_unimplemented_device("hse_xbic", 0x40008000, 0x4000);
     create_unimplemented_device("erm1", 0x4000c000, 0x4000);
@@ -241,6 +252,20 @@ static void create_unimplemented_devices(void) {
     create_unimplemented_device("pram_3", 0x40588000, 0x4000);
 }
 
+/**
+ * @brief Super basic implementation of the read function for the MC_ME (Mode
+ * Control Module)
+ *
+ * It does not do anything but return a magic value when reading at offset
+ * 0x310. This is needed to boot using the default startup code.
+ *
+ * @param opaque A pointer to the opaque data structure.
+ * @param addr The offset from the start of the memory region being
+ * read from.
+ * @param size The size of the value being read.
+ *
+ * @return The value read from the memory region.
+ */
 static uint64_t mc_me_read(void *opaque, hwaddr addr, unsigned size) {
     uint32_t ret = 0;
 
@@ -256,6 +281,16 @@ static uint64_t mc_me_read(void *opaque, hwaddr addr, unsigned size) {
     return ret;
 }
 
+/**
+ * @brief Handles write operations to the MC_ME (Mode Entry) module.
+ *
+ * It does not perform any actions for any address (MC_ME is not implemented).
+ *
+ * @param opaque A pointer to the opaque data structure.
+ * @param addr The offset from the start of the memory region being written to.
+ * @param val The value being written.
+ * @param size The size of the value being written.
+ */
 static void mc_me_write(void *opaque, hwaddr addr, uint64_t val,
                         unsigned size) {
     switch (addr) {
@@ -270,9 +305,23 @@ static const MemoryRegionOps mc_me_ops = {
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
+/**
+ * @brief Initialize the NXP S32K358 SoC
+ *
+ * This function initializes the NXP S32K358 SoC by performing the following
+ * steps:
+ * - Initializes the ARMv7-M CPU.
+ * - Sets up the base clocks for the SoC, sysclk and refclk, needed by the
+ * armv7m.
+ * - Initializes additional clocks required for LPUARTs, aips_plat_clk
+ * and aips_slow_clk.
+ * - Initializes the LPUARTs.
+ * - Initializes the eDMA.
+ *
+ * @param obj Pointer to the Object structure
+ */
 static void nxps32k358_soc_initfn(Object *obj) {
     NXPS32K358State *s = NXPS32K358_SOC(obj);
-    // int i;
 
     object_initialize_child(obj, "armv7m", &s->armv7m, TYPE_ARMV7M);
 
@@ -289,6 +338,39 @@ static void nxps32k358_soc_initfn(Object *obj) {
     object_initialize_child(obj, "edma", &s->edma, TYPE_NXPS32K358_EDMA);
 }
 
+/**
+ * @brief Realize the NXPS32K358 SoC device
+ *
+ * This function initializes and sets up the NXPS32K358 SoC device. It performs
+ * the following tasks:
+ * - Checks the clock sources for refclk and sysclk.
+ * - Sets the frequency and source for refclk. We decided that refclk always
+ * runs at HCLK / 8.
+ * - Sets the default frequencies for aips_plat_clk and aips_slow_clk. In theory
+ * these should be configurable by the firmware.
+ * - Initializes the code flash memory regions (as ROM).
+ * - Initializes the data flash memory region (as ROM).
+ * - Initializes the SRAM memory regions (as RAM).
+ * - Initializes the DTCM and ITCM memory regions (as RAM).
+ * - Initializes the MC_ME memory region (with our basic implementation).
+ * - Initializes the ARMv7m CPU with specific properties and connects clocks.
+ * Notice that there are 240 IRQs, 4 priority bits (16 levels) and 16 MPU
+ * regions instead of the standard 8. Moreover, the VTOR is located at
+ * CODE_FLASH_BASE_ADDRESS + 2048 since we want to "skip" the boot header as the
+ * official linker script provided by NXP states that the VTOR is located at
+ * CODE_FLASH_BASE_ADDRESS + boot_header with 2048 alignment (and the header is
+ * small, smaller than 2048 bytes)
+ * - Attaches and initializes the LPUART devices with appropriate clocks
+ * (AIPS_PLAT_CLK and AIPS_SLOW_CLK), IRQs and memory mappings.
+ * - Attaches and initializes the eDMA controller with memory mappings and IRQs.
+ * - Creates unimplemented devices with lower priority.
+ *
+ * This function ensures that all necessary components of the NXPS32K358 SoC are
+ * properly set up and ready for use.
+ *
+ * @param dev_soc The device state of the SoC
+ * @param errp Pointer to an error object
+ */
 static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
     NXPS32K358State *s = NXPS32K358_SOC(dev_soc);
     DeviceState *armv7m;
@@ -307,17 +389,9 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
         return;
     }
 
-    /*
-     * TODO: ideally we should model the SoC RCC and its ability to
-     * change the sysclk frequency and define different sysclk sources.
-     */
-
-    /* The refclk always runs at frequency HCLK / 8 */
     clock_set_mul_div(s->refclk, 8, 1);
     clock_set_source(s->refclk, s->sysclk);
 
-    // These are the default frequencies for the S32K358
-    // In theory we should implement the MC_RGM to change both frequencies
     clock_set_hz(s->aips_plat_clk, 80000000);
     clock_set_hz(s->aips_slow_clk, 40000000);
 
@@ -391,14 +465,10 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
 
     /* Init ARMv7m */
     armv7m = DEVICE(&s->armv7m);
-    qdev_prop_set_uint32(armv7m, "num-irq",
-                         240);  // TODO: Check if it should be 241
-    qdev_prop_set_uint8(armv7m, "num-prio-bits",
-                        4);  // 16 priority levels = 4 bits
+    qdev_prop_set_uint32(armv7m, "num-irq", 240);
+    qdev_prop_set_uint8(armv7m, "num-prio-bits", 4);
     qdev_prop_set_string(armv7m, "cpu-type", ARM_CPU_TYPE_NAME("cortex-m7"));
     qdev_prop_set_bit(armv7m, "enable-bitband", true);
-    // We want to "skip" the boot header as the startup code is located at
-    // CODE_FLASH_BASE_ADDRESS + boot_header with 2048 alignment
     qdev_prop_set_uint32(armv7m, "init-svtor", CODE_FLASH_BASE_ADDRESS + 2048);
     qdev_prop_set_uint32(armv7m, "init-nsvtor", CODE_FLASH_BASE_ADDRESS + 2048);
     qdev_prop_set_uint32(armv7m, "mpu-ns-regions", 16);
@@ -411,7 +481,6 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
         return;
     }
 
-    /* Attach UART (uses USART registers) and USART controllers */
     for (int i = 0; i < NUM_LPUARTS; i++) {
         dev = DEVICE(&(s->lpuart[i]));
         qdev_prop_set_chr(dev, "chardev", serial_hd(i));
@@ -430,7 +499,6 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
         sysbus_connect_irq(busdev, 0, qdev_get_gpio_in(armv7m, LPUART_IRQ(i)));
     }
 
-    /* Attach eDMA controller */
     dev = DEVICE(&s->edma);
     if (!sysbus_realize(SYS_BUS_DEVICE(&s->edma), errp)) {
         return;
@@ -441,8 +509,6 @@ static void nxps32k358_soc_realize(DeviceState *dev_soc, Error **errp) {
         sysbus_connect_irq(busdev, i, qdev_get_gpio_in(armv7m, EDMA_IRQ(i)));
     }
 
-    // Implemented devices have higher priority than unimplemented ones so we
-    // don't care if they overlap
     create_unimplemented_devices();
 }
 
@@ -450,7 +516,6 @@ static void nxps32k358_soc_class_init(ObjectClass *klass, void *data) {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = nxps32k358_soc_realize;
-    /* No vmstate or reset required: device has no internal state */
 }
 
 static const TypeInfo nxps32k358_soc_info = {

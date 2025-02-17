@@ -1,7 +1,7 @@
 /*
  * NXPS32K358 LPUART
  *
- * Copyright (c) 2014 Alistair Francis <alistair@alistair23.me>
+ * Copyright (c) 2024-2025 CAOS group 27: C. F. Vescovo, C. Sanna, F. Stella
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,11 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file nxps32k358_lpuart.h
+ * @brief Definition of the NXPS32K358 LPUART module.
+ */
+
 #ifndef HW_NXPS32K358_LPUART_H
 #define HW_NXPS32K358_LPUART_H
 
@@ -30,6 +35,8 @@
 #include "qom/object.h"
 #include "hw/registerfields.h"
 #include "hw/qdev-clock.h"
+
+#define READONLY
 
 REG32(VERID, 0x00)
 REG32(PARAM, 0x04)
@@ -133,6 +140,97 @@ static inline uint32_t LPUART_FIFO_RESET(int n) {
 #define TYPE_NXPS32K358_LPUART "nxps32k358-lpuart"
 OBJECT_DECLARE_SIMPLE_TYPE(NXPS32K358LPUartState, NXPS32K358_LPUART)
 
+/**
+ * @struct NXPS32K358LPUartState
+ * @brief Represents the state of an NXP S32K358 LPUART instance.
+ *
+ * @var NXPS32K358LPUartState::parent_obj
+ * The parent system bus device object.
+ *
+ * @var NXPS32K358LPUartState::mmio
+ * Memory-mapped I/O region for the LPUART device.
+ *
+ * @var NXPS32K358LPUartState::lpuart_port
+ * The LPUART port number, ranging from 0 to 15.
+ *
+ * @var NXPS32K358LPUartState::lpuart_verid
+ * Read-only register for the LPUART version ID.
+ *
+ * @var NXPS32K358LPUartState::lpuart_param
+ * Read-only register for the LPUART parameters.
+ *
+ * @var NXPS32K358LPUartState::lpuart_global
+ * Global control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_pincfg
+ * Pin configuration register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_baud
+ * Baud rate configuration register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_stat
+ * Status register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_control
+ * Control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_data
+ * Data register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_match
+ * Match address register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_modir
+ * Modem IR register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_fifo
+ * FIFO control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_water
+ * Watermark register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_dataro
+ * Read-only data register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_mcr
+ * Modem control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_msr
+ * Modem status register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_reir
+ * Receive error interrupt register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_teir
+ * Transmit error interrupt register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_hdcr
+ * Hardware debug control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_tocr
+ * Timeout control register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_tosr
+ * Timeout status register for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_timeout
+ * Array of timeout registers for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_tcb
+ * Array of transmit control buffer registers for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::lpuart_tdb
+ * Array of transmit data buffer registers for the LPUART.
+ *
+ * @var NXPS32K358LPUartState::clk
+ * Clock associated with the LPUART device.
+ *
+ * @var NXPS32K358LPUartState::chr
+ * Character backend for the LPUART device.
+ *
+ * @var NXPS32K358LPUartState::irq
+ * Interrupt request line for the LPUART device.
+ */
 struct NXPS32K358LPUartState {
     /* <private> */
     SysBusDevice parent_obj;
@@ -143,8 +241,8 @@ struct NXPS32K358LPUartState {
     // Will be an integer from 0 to 15
     uint32_t lpuart_port;
 
-    uint32_t lpuart_verid;
-    uint32_t lpuart_param;
+    uint32_t READONLY lpuart_verid;
+    uint32_t READONLY lpuart_param;
     uint32_t lpuart_global;
     uint32_t lpuart_pincfg;
     uint32_t lpuart_baud;
@@ -155,7 +253,7 @@ struct NXPS32K358LPUartState {
     uint32_t lpuart_modir;
     uint32_t lpuart_fifo;
     uint32_t lpuart_water;
-    uint32_t lpuart_dataro;
+    uint32_t READONLY lpuart_dataro;
     uint32_t lpuart_mcr;
     uint32_t lpuart_msr;
     uint32_t lpuart_reir;
@@ -172,6 +270,18 @@ struct NXPS32K358LPUartState {
     qemu_irq irq;
 };
 
+/**
+ * @brief Calculate the baud rate for the LPUART.
+ *
+ * This function computes the baud rate for the LPUART (Low Power UART) by
+ * extracting the SBR (Baud Rate Modulo Divisor) and OSR (Over Sampling Ratio)
+ * values from the LPUART baud rate register, and then using the clock frequency
+ * to calculate the baud rate.
+ *
+ * @param s Pointer to the NXPS32K358LPUartState structure containing the LPUART
+ * state.
+ * @return The calculated baud rate.
+ */
 static inline uint32_t LPUART_BAUD_RATE(NXPS32K358LPUartState *s) {
     uint32_t sbr = FIELD_EX32(s->lpuart_baud, BAUD, SBR);
     uint32_t osr = FIELD_EX32(s->lpuart_baud, BAUD, OSR);

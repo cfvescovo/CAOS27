@@ -1,8 +1,30 @@
 /*
- * NXP S32K358 eDMA controller - Copyright (c) 2025 CFV & Giovanni
+ * NXPS32K358 eDMA
  *
- * This work is licensed under the terms of the GNU GPL, version 2 or later.
- * See the COPYING file in the top-level directory.
+ * Copyright (c) 2024-2025 CAOS group 27: C. F. Vescovo, C. Sanna, F. Stella
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @file nxps32k358_edma.c
+ * @brief Implementation of the NXPS32K358 eDMA module.
  */
 
 #include "qemu/osdep.h"
@@ -19,23 +41,63 @@
 
 #define MAX_SIZE 64
 
+// If NXP_EDMA_DEBUG is 0, no debug messages will be printed
+// If it is 1, only write logs will be printed
+// If it is 2, read and write logs will be printed
+#ifndef NXP_EDMA_DEBUG
+#define NXP_EDMA_DEBUG 0
+#endif
+
+#define DB_PRINT_L(lvl, fmt, args...)               \
+    do {                                            \
+        if (NXP_EDMA_DEBUG >= lvl) {                \
+            qemu_log("%s: " fmt, __func__, ##args); \
+        }                                           \
+    } while (0)
+
+#define DB_PRINT(fmt, args...) DB_PRINT_L(1, fmt, ##args)
+#define DB_PRINT_READ(fmt, args...) DB_PRINT_L(2, fmt, ##args)
+
+/**
+ * @brief Update the interrupt request (IRQ) status for a specific Transfer
+ * Control Descriptor (TCD).
+ *
+ * This function checks the status of the TCD and updates the interrupt request
+ * status based on the current state of the TCD's control and iteration
+ * registers.
+ *
+ * @param s Pointer to the NXPS32K358EDMAState structure.
+ * @param tcd_no The index of the TCD to update.
+ *
+ * The function performs the following checks:
+ * 1. If the INTHALF bit in the TCD's control and status register (tcd_csr) is
+ * set and the current iteration count (tcd_citer) is greater than or equal to
+ * half of the beginning iteration count (tcd_biter), the interrupt request is
+ * set.
+ * 2. If the INTMAJOR bit in the TCD's control and status register (tcd_csr) is
+ * set and the current iteration count (tcd_citer) is zero, the interrupt
+ * request is set.
+ *
+ * If any of the above conditions are met, the interrupt request for the TCD is
+ * set and the corresponding bit in the edma_int register is updated. The IRQ is
+ * then triggered using qemu_set_irq. If none of the conditions are met, the
+ * interrupt request is cleared and the IRQ is deasserted.
+ *
+ * @note Error interrupt (EEI) is not supported.
+ */
 static void nxps32k358_edma_tcd_update_irq(NXPS32K358EDMAState *s, int tcd_no) {
     struct NXPS32K358EDMATCDState *ch = &s->tcd[tcd_no];
 
-    // If inthalf is set and if citer >= biter/2, interrupt request
     if (FIELD_EX32(ch->tcd_csr, TCD_CSR, INTHALF) &&
         FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) >=
             FIELD_EX16(ch->tcd_biter, TCD_BITER, BITER) / 2) {
         ch->ch_int |= R_CH_INT_INT_MASK;
     }
 
-    // If intmajor is set and if citer == 0, interrupt request
     if (FIELD_EX32(ch->tcd_csr, TCD_CSR, INTMAJOR) &&
         FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) == 0) {
         ch->ch_int |= R_CH_INT_INT_MASK;
     }
-
-    // Error irq not implemented (EEI)
 
     if (ch->ch_int & R_CH_INT_INT_MASK) {
         s->edma_int |= 1 << tcd_no;
@@ -46,6 +108,31 @@ static void nxps32k358_edma_tcd_update_irq(NXPS32K358EDMAState *s, int tcd_no) {
     }
 }
 
+/**
+ * @brief Transmits data using the eDMA controller.
+ *
+ * This function handles the transmission of data using the eDMA controller
+ * for the specified Transfer Control Descriptor (TCD). It performs the
+ * following steps:
+ * - Reads the source and destination addresses and sizes.
+ * - Asserts that the source and destination sizes are valid.
+ * - Calculates the number of bytes to transfer.
+ * - Performs the major loop, which includes:
+ *   - Reading data from the source address.
+ *   - Writing data to the destination address.
+ *   - Updating the source and destination addresses.
+ *   - Decrementing the current iteration counter.
+ *   - Disabling the ACTIVE flag after the first minor loop is completed.
+ *   - Updating the interrupt request.
+ * - Handles the completion of the major loop, which includes:
+ *   - Writing the source last address adjustment if ESDA is set.
+ *   - Writing the destination last address adjustment if ESG is set.
+ *   - Resetting the current iteration counter to the beginning iteration count.
+ *   - Setting the DONE flag and the interrupt flag.
+ *
+ * @param s Pointer to the eDMA state structure.
+ * @param tcd_no The TCD number to be processed.
+ */
 static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
     uint8_t buf[MAX_SIZE];
     struct NXPS32K358EDMATCDState *ch = &s->tcd[tcd_no];
@@ -68,7 +155,7 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
 
     uint32_t max_size = ssize > dsize ? ssize : dsize;
 
-    // Major Loop
+    // Major Loop, a new request is needed every time we want to advance
     if (FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) > 0) {
         saddr = ch->tcd_saddr;
         daddr = ch->tcd_daddr;
@@ -89,7 +176,8 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
         }
 
         // In theory it should be incremented by mloff if smloe/dmloe
-        // are active
+        // are active. We write in the registers at the end of the minor loop as
+        // stated by the documentation
         ch->tcd_saddr = saddr;
         ch->tcd_daddr = daddr;
 
@@ -103,6 +191,7 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
         nxps32k358_edma_tcd_update_irq(s, tcd_no);
     }
 
+    // Major loop completed
     if (FIELD_EX16(ch->tcd_citer, TCD_CITER, CITER) == 0) {
         uint8_t esda = FIELD_EX32(ch->tcd_csr, TCD_CSR, ESDA);
         if (esda) {
@@ -123,8 +212,6 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
             uint8_t next_tcd_data[32];
             cpu_physical_memory_read(dlast_sga, next_tcd_data, 32);
 
-            /* assert(((uint32_t)&ch->tcd_biter + sizeof(ch->tcd_biter) -
-                    (uint32_t)&ch->tcd_saddr) == 32); */
             memcpy(&ch->tcd_saddr, next_tcd_data, 32);
         } else {
             ch->tcd_daddr =
@@ -140,10 +227,26 @@ static void nxps32k358_edma_transmit(NXPS32K358EDMAState *s, int tcd_no) {
     }
 }
 
+/**
+ * @brief Perform round-robin arbitration for the eDMA channels.
+ *
+ * This function implements a basic round-robin arbitration mechanism for the
+ * eDMA channels. It iterates through the channels starting from the last
+ * offset and checks if the channel's TCD (Transfer Control Descriptor) has
+ * the START bit set in its CSR (Control and Status Register). If a channel
+ * is found with the START bit set, it clears the DONE bit, clears the START
+ * bit, sets the ACTIVE bit, and initiates the transmission for that channel.
+ * The offset is then updated to the next channel.
+ *
+ * @param s Pointer to the NXPS32K358EDMAState structure.
+ *
+ * @note There is no support for priorities in this implementation.
+ */
 static void nxps32k358_edma_arbitrate(NXPS32K358EDMAState *s) {
     static int offset = 0;
 
-    // This is a round-robin
+    // Since there is no support for priorities, we implement a basic
+    // round-robin arbitration
     for (int i = 0; i < EDMA_CHANNELS; i++) {
         int j = (i + offset) % EDMA_CHANNELS;
         if (s->tcd[j].tcd_csr & R_TCD_CSR_START_MASK) {
@@ -157,6 +260,20 @@ static void nxps32k358_edma_arbitrate(NXPS32K358EDMAState *s) {
     }
 }
 
+/**
+ * @brief Reads a Transfer Control Descriptor (TCD) register value for a given
+ * channel.
+ *
+ * This function reads the value of a specified TCD register for a given channel
+ * in the NXPS32K358 EDMA state. The register to be read is determined by the
+ * offset parameter.
+ *
+ * @param s Pointer to the NXPS32K358 EDMA state.
+ * @param offset Offset of the TCD register to be read.
+ * @param size Size of the read operation (unused in this function).
+ * @param c Channel number from which to read the TCD register.
+ * @return The value of the specified TCD register.
+ */
 static uint64_t nxps32k358_edma_tcd_read(NXPS32K358EDMAState *s, hwaddr offset,
                                          unsigned size, unsigned c) {
     uint32_t res = 0;
@@ -219,26 +336,57 @@ static uint64_t nxps32k358_edma_tcd_read(NXPS32K358EDMAState *s, hwaddr offset,
             break;
     }
 
+    DB_PRINT_READ("Read 0x%" PRIx32 ", 0x%" HWADDR_PRIx "\n", res, offset);
+
     return res;
 }
-
+/**
+ * @brief Write to the Transfer Control Descriptor (TCD) of the eDMA module.
+ *
+ * This function handles writing to various fields of the TCD for a specific
+ * channel in the eDMA module. It updates the appropriate fields based on the
+ * provided offset and value.
+ *
+ * @param s Pointer to the NXPS32K358EDMAState structure.
+ * @param offset Offset within the TCD to write to.
+ * @param value Value to write to the specified offset.
+ * @param size Size of the value being written.
+ * @param c Channel number to which the TCD belongs.
+ *
+ * The function supports writing to all the fields of the TCD, excluding:
+ * - A_CH_SBR
+ * - A_CH_PRI
+ *
+ * The function also performs various checks and assertions to ensure the
+ * correctness of the written values, such as ensuring that certain bits are
+ * not set and that specific fields match expected values, as stated in the
+ * documentation.
+ *
+ * If an unsupported offset is provided, an error message is logged.
+ *
+ * @note The function does not support channel linking, SMLOE, DMLOE, BWC, the
+ * last 4 bits of CH_CSR and probably other features.
+ */
 static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
                                       uint64_t value, unsigned size,
                                       unsigned c) {
     struct NXPS32K358EDMATCDState *ch = &s->tcd[c];
 
+    DB_PRINT("Write 0x%" PRIx64 ", 0x%" HWADDR_PRIx "\n", value, offset);
+
     switch (offset) {
         case A_CH_CSR:
             ch->ch_csr &= ~R_CH_CSR_DONE_MASK;
             ch->ch_csr |= value & R_CH_CSR_DONE_MASK;
-            // TODO: last 4 bits are writable too
+            // The last 4 bits should be writable too but there is no support
             break;
         case A_CH_ES:
-            // SW should be able to clear the error status (first bit)
+            // SW must be able to clear the error status (first bit)
             ch->ch_es &= ~R_CH_ES_ERR_MASK;
             ch->ch_es |= value & R_CH_ES_ERR_MASK;
             break;
         case A_CH_INT:
+            // Write 1 to clear (i.e. disable the interrupt request)
             if (value & R_CH_INT_INT_MASK) ch->ch_int &= ~R_CH_INT_INT_MASK;
             nxps32k358_edma_tcd_update_irq(s, c);
             break;
@@ -255,7 +403,7 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
             ch->tcd_attr = value;
             break;
         case A_TCD_NBYTES_MLOFF:
-            // no support for SMLOE and DMLOE
+            // No support for SMLOE and DMLOE, we implement MLOFF only
             assert((value & R_TCD_NBYTES_MLOFF_SMLOE_MASK) == 0);
             assert((value & R_TCD_NBYTES_MLOFF_DMLOE_MASK) == 0);
             ch->tcd_nbytes_mloff = value;
@@ -270,8 +418,10 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
             ch->tcd_doff = value;
             break;
         case A_TCD_CITER:
-            // no support for channel linking
+            // No support for channel linking
             assert((value & R_TCD_CITER_ELINK_MASK) == 0);
+            // The documentation states that when CITER is written, its value
+            // must be equal to BITER
             assert(value == FIELD_EX32(ch->tcd_biter, TCD_BITER, BITER));
             ch->tcd_citer = value;
             break;
@@ -279,17 +429,18 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
             ch->tcd_dlast_sga = value;
             break;
         case A_TCD_CSR:
-            // no support for bwc, don't care
+            // No support for bwc (it would make little sense in an emulated
+            // context), don't care. Also, no support for channel linking
             assert((value & R_TCD_CSR_MAJORELINK_MASK) == 0);
             ch->tcd_csr = value;
+            // Start request
             if (value & R_TCD_CSR_START_MASK) {
                 nxps32k358_edma_arbitrate(s);
             }
             break;
         case A_TCD_BITER:
+            // No support for channel linking
             assert((value & R_TCD_BITER_ELINK_MASK) == 0);
-            // no support for beginning iteration count greater than 1
-            assert((value & R_TCD_BITER_BITER_MASK) <= 1);
             ch->tcd_biter = value;
             break;
         default:
@@ -300,6 +451,16 @@ static void nxps32k358_edma_tcd_write(NXPS32K358EDMAState *s, hwaddr offset,
     }
 }
 
+/**
+ * @brief Resets the Transfer Control Descriptor (TCD) state of the NXPS32K358
+ * eDMA module.
+ *
+ * This function initializes all the fields of the NXPS32K358EDMATCDState
+ * structure to their default values.
+ *
+ * @param s Pointer to the NXPS32K358EDMATCDState structure to be reset.
+ *
+ */
 static void nxps32k358_edma_tcd_reset(struct NXPS32K358EDMATCDState *s) {
     s->ch_csr = 0;
     s->ch_es = 0;
@@ -319,6 +480,23 @@ static void nxps32k358_edma_tcd_reset(struct NXPS32K358EDMATCDState *s) {
     s->tcd_biter = 0;
 }
 
+/**
+ * nxps32k358_edma_global_read - Read from the global EDMA registers
+ * @param s: Pointer to the NXPS32K358EDMAState structure
+ * @param offset: Offset of the register to read
+ * @param size: Size of the read operation (unused)
+ *
+ * This function reads the value from the specified global EDMA register
+ * based on the provided offset. For offsets within the range of
+ * A_EDMA_CHN_GRPRI, it calculates the appropriate channel group priority
+ * register to read from. If an invalid offset is provided, it logs an error
+ * message.
+ *
+ * @return The value read from the specified register.
+ *
+ * @note There is no real support for group priorities, we just return the value
+ * saved in the field.
+ */
 static uint64_t nxps32k358_edma_global_read(NXPS32K358EDMAState *s,
                                             hwaddr offset, unsigned size) {
     uint32_t res = 0;
@@ -352,6 +530,25 @@ static uint64_t nxps32k358_edma_global_read(NXPS32K358EDMAState *s,
     return res;
 }
 
+/**
+ * nxps32k358_edma_global_write - Write to the global registers of the eDMA
+ * controller
+ * @param s: Pointer to the NXPS32K358EDMAState structure
+ * @param offset: Offset of the register to write to
+ * @param value: Value to write to the register
+ * @param size: Size of the value to write
+ *
+ * This function handles writing to the global registers of the eDMA controller.
+ * It supports writing to the CSR and GRPRI registers. For the CSR register,
+ * only the bits specified by CSR_WR_MASK are writable. For the GRPRI registers,
+ * only the bits specified by GRPRI_WR_MASK are writable. Writes to the ES, INT,
+ * and HRS registers are not allowed and are treated as read-only.
+ *
+ * If an invalid offset is provided, an error message is logged.
+ *
+ * @note There is no real support for group priorities, we just write the value
+ * to the field.
+ */
 static void nxps32k358_edma_global_write(NXPS32K358EDMAState *s, hwaddr offset,
                                          uint64_t value, unsigned size) {
     const uint32_t CSR_WR_MASK = 0x000003f6;
@@ -380,6 +577,23 @@ static void nxps32k358_edma_global_write(NXPS32K358EDMAState *s, hwaddr offset,
     }
 }
 
+/**
+ * nxps32k358_edma0_read - Read from the NXPS32K358 EDMA0 module.
+ * @param obj: Pointer to the NXPS32K358EDMAState object.
+ * @param offset: The offset within the EDMA0 module to read from.
+ * @param size: The size of the read operation.
+ *
+ * This function reads data from the NXPS32K358 EDMA0 module. If the offset
+ * is greater than or equal to 0x4000, it reads from the Transfer Control
+ * Descriptor (TCD) area. The TCD offset is calculated as the offset modulo
+ * 0x4000, and the TCD number is calculated as the integer division of the
+ * offset minus 0x4000 by 0x4000. The function then calls
+ * nxps32k358_edma_tcd_read() to perform the read operation from the TCD area.
+ * If the offset is less than 0x4000, it reads from the global area of the
+ * EDMA0 module by calling nxps32k358_edma_global_read().
+ *
+ * @return The data read from the specified offset and size.
+ */
 static uint64_t nxps32k358_edma0_read(void *obj, hwaddr offset, unsigned size) {
     NXPS32K358EDMAState *s = obj;
     if (offset >= 0x4000) {
@@ -391,6 +605,18 @@ static uint64_t nxps32k358_edma0_read(void *obj, hwaddr offset, unsigned size) {
     }
 }
 
+/**
+ * nxps32k358_edma0_write - Handles write operations to the eDMA controller.
+ * @param obj: Pointer to the eDMA state object.
+ * @param offset: The offset within the eDMA memory space being written to.
+ * @param value: The value to write.
+ * @param size: The size of the value being written.
+ *
+ * This function determines whether the write operation is targeting the global
+ * eDMA registers or a specific Transfer Control Descriptor (TCD) based on the
+ * provided offset. If the offset is greater than or equal to 0x4000, the write
+ * is directed to a TCD; otherwise, it is directed to the global eDMA registers.
+ */
 static void nxps32k358_edma0_write(void *obj, hwaddr offset, uint64_t value,
                                    unsigned size) {
     NXPS32K358EDMAState *s = obj;
@@ -403,6 +629,19 @@ static void nxps32k358_edma0_write(void *obj, hwaddr offset, uint64_t value,
     }
 }
 
+/**
+ * @brief Reads data from the NXPS32K358 EDMA12 module.
+ *
+ * This function reads data from the specified offset within the NXPS32K358
+ * EDMA12 module. It calculates the TCD (Transfer Control Descriptor) offset and
+ * number based on the given offset and size, and then calls the
+ * `nxps32k358_edma_tcd_read` function to perform the read operation.
+ *
+ * @param obj Pointer to the NXPS32K358EDMAState object.
+ * @param offset The offset within the EDMA12 module to read from.
+ * @param size The size of the data to read.
+ * @return The data read from the specified offset and size.
+ */
 static uint64_t nxps32k358_edma12_read(void *obj, hwaddr offset,
                                        unsigned size) {
     NXPS32K358EDMAState *s = obj;
@@ -411,6 +650,18 @@ static uint64_t nxps32k358_edma12_read(void *obj, hwaddr offset,
     return nxps32k358_edma_tcd_read(s, tcd_offset, size, tcd_num);
 }
 
+/**
+ * nxps32k358_edma12_write - Write to the eDMA12 module of the NXPS32K358
+ * @param obj: Pointer to the eDMA state object
+ * @param offset: Offset within the eDMA module
+ * @param value: Value to be written
+ * @param size: Size of the value to be written
+ *
+ * This function writes a value to a specific offset within the eDMA12 module
+ * of the NXPS32K358. The offset is adjusted to target a specific Transfer
+ * Control Descriptor (TCD) within the eDMA module. The TCD number is calculated
+ * based on the offset and a base index of 12.
+ */
 static void nxps32k358_edma12_write(void *obj, hwaddr offset, uint64_t value,
                                     unsigned size) {
     NXPS32K358EDMAState *s = obj;
@@ -431,6 +682,24 @@ static const MemoryRegionOps nxps32k358_edma12_ops = {
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
+/**
+ * nxps32k358_edma_init - Initialize the NXP S32K358 eDMA controller
+ * @param obj: Pointer to the Object structure
+ *
+ * This function initializes the NXP S32K358 eDMA controller by setting up
+ * multiple memory regions and initializing the system bus for memory-mapped
+ * I/O (MMIO). The TCDs (Transfer Control Descriptors) are interleaved with
+ * the global registers, so multiple memory regions are created to handle
+ * this interleaving. Additionally, it initializes the IRQs for each eDMA
+ * channel.
+ *
+ * Memory regions initialized:
+ * - mmio0: Base memory region for the eDMA controller and for the first 12 TCDs
+ * (TCD0-TCD11)
+ * - mmio12: Memory region for the remaining TCDs (TCD12-TCD31)
+ *
+ * IRQs initialized for each eDMA channel.
+ */
 static void nxps32k358_edma_init(Object *obj) {
     NXPS32K358EDMAState *s = NXPS32K358_EDMA(obj);
 
@@ -447,6 +716,15 @@ static void nxps32k358_edma_init(Object *obj) {
     }
 }
 
+/**
+ * nxps32k358_edma_reset - Resets the state of the NXPS32K358 eDMA controller.
+ * @param dev: Pointer to the DeviceState structure representing the device.
+ *
+ * This function resets the eDMA controller by initializing its control and
+ * status registers to their default reset values. It also resets each channel's
+ * priority group and TCD (Transfer Control Descriptor) and updates the IRQ
+ * status for each channel.
+ */
 static void nxps32k358_edma_reset(DeviceState *dev) {
     NXPS32K358EDMAState *s = NXPS32K358_EDMA(dev);
 
