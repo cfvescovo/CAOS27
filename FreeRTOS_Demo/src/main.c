@@ -27,12 +27,15 @@
 #define DMA_CH0_CONFIG_LIST_DIMENSION      ((uint32)2U)
 #define UART_LPUART_INTERNAL_CHANNEL  3
 
+#define SETUP_MSG "Setup completed\n"
+
 #define DMA_TRANSFER_SUCCESS_MSG "DMA transfer completed successfully\n"
 #define DMA_TRANSFER_FAILURE_MSG "DMA transfer failed\n"
 
+#define SEED_MSG "Insert a seed between 0 and 9: "
+
 #define MAX 10
 #define MIN 1
-
 
 SemaphoreHandle_t consumer_go;
 SemaphoreHandle_t producer_go;
@@ -79,10 +82,20 @@ void SendTask( void *pvParameters )
     (void)pvParameters;
     BaseType_t operation_status;
 
+    uint8 seed_buf[10];
+    unsigned int seed;
+    char msg[10];
+
     for( ;; )
     {
     	operation_status = xSemaphoreTake(producer_go, portMAX_DELAY);
     	configASSERT(operation_status == pdPASS);
+    	Lpuart_Uart_Ip_SyncSend(UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)SEED_MSG, strlen(SEED_MSG), portMAX_DELAY);
+    	Lpuart_Uart_Ip_SyncReceive(UART_LPUART_INTERNAL_CHANNEL, seed_buf, 1, portMAX_DELAY);
+    	seed = atoi((const char *)seed_buf);
+    	srand(seed);
+        snprintf(msg, 10, "%u\n", seed);
+    	Lpuart_Uart_Ip_SyncSend(UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)msg, strlen(msg), portMAX_DELAY);
         Dma_Ip_SetLogicChannelTransferList(DMA_LOGIC_CH_0, DmaCh0_TransferList, DMA_CH0_CONFIG_LIST_DIMENSION);
     	for (int i = 0; i < 128; i++) {
     		// fill the buffer with random numbers between MIN and MAX
@@ -117,7 +130,7 @@ void ReceiveTask( void *pvParameters )
 		}
         snprintf(msg, 50, "DMA callback counter: %lu\n", g_DmaCh0_CallbackCounter);
         Lpuart_Uart_Ip_AsyncSend(UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)msg, strlen(msg));
-        snprintf(msg, 50, "First number: %u\n", DmaCh0_SourceBuffer[0]);
+        snprintf(msg, 50, "First number generated: %u\n", DmaCh0_SourceBuffer[0]);
         Lpuart_Uart_Ip_AsyncSend(UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)msg, strlen(msg));
         xSemaphoreGive(producer_go);
     }
@@ -139,6 +152,8 @@ int main(void)
     Lpuart_Uart_Ip_Init(UART_LPUART_INTERNAL_CHANNEL, &Lpuart_Uart_Ip_xHwConfigPB_3);
     IntCtrl_Ip_InstallHandler(DMATCD0_IRQn, Dma0_Ch0_IRQHandler, NULL_PTR);
     (void)Dma_Ip_Init(&Dma_Ip_xDmaInitPB);
+
+    Lpuart_Uart_Ip_AsyncSend(UART_LPUART_INTERNAL_CHANNEL, (const uint8 *)SETUP_MSG, strlen(SETUP_MSG));
 
     consumer_go = xSemaphoreCreateBinary();
     producer_go = xSemaphoreCreateBinary();
