@@ -29,7 +29,7 @@ Developed as part of the **Computer Architectures and Operating Systems** course
 
 ---
 
-# Technical specifications & quality requirements
+# Technical specifications & Quality requirements
 - **Board:** NXP S32K3X8EVB-Q289, an evaluation board for the S32K3 family designed for automotive applications.
 - **MCU:** NXP S32K358 (32-bit Arm® Cortex®-M7)
 - **Peripherals and requirements:**
@@ -40,26 +40,33 @@ Developed as part of the **Computer Architectures and Operating Systems** course
   - Must run **FreeRTOS** and AUTOSAR-based projects
 
 ---
+# Board and SoC Overview
+- **Clocks**: static configuration, with `sysclk` at 160MHz, `refclock` at 20MHz and LPUART clocks described in the UART section.
+- **Memory regions**: as per the S32K3 reference manual
+- **Interrupts and priorities**: Support for **240 interrupt channels** with **16 priority levels** (4-bit).
+- **Memory Protection Unit** (MPU): Full support for **16 MPU regions**, as per the S32K3 reference manual, instead of the default 8 regions.
+- **Peripherals**: Support for all **16 LPUART channels** and **eDMA** (NXP's enhanced DMA) for data transfers with **32 channels**.
+- **Documentation**: [Board definition](http://localhost:8000/nxps32k3x8evb_8h.html), [Board implementation](http://localhost:8000/nxps32k3x8evb_8c.html), [SoC definition](http://localhost:8000/nxps32k358__soc_8h.html), [SoC implementation](http://localhost:8000/nxps32k358__soc_8c.html)
+
+---
 
 # UART Support
+- Officially named **LPUART** (Low Power UART), it is a **low-power, high-performance** serial communication module.
 - All 16 channels are supported (`LPUART0` to `LPUART15`), with the related registers and fixed clock configurations (`AIPS_PLAT_CLK` for `LPUART{0, 1, 8}` and `AIPS_SLOW_CLK` for the others).
 - **Baud rate** configuration based on each channel's clock.
 - Standard **UART operations** for data transmission and reception (i.e. handling of the `DATA` register).
 - **Interrupt handling** for UART communication.
+- **Documentation**: [Definition](http://localhost:8000/nxps32k358__lpuart_8h.html), [Implementation](http://localhost:8000/nxps32k358__lpuart_8c.html)
 
 ---
 
 # DMA Integration
-- Basic **DMA** support for data transfers:
-    - **Memory-to-memory** and **peripheral-to-memory** transfers.
+- **eDMA** (NXP's enhanced DMA) support for data transfers:
+    - **Memory-to-memory** transfers configured using **TCD** (transfer control descriptor) registers.
     - **Interrupts** for transfer completion (`INTMAJOR`, i.e. `CITER==0`) and for half transfer (`INTHALF`, i.e. `CITER >= BITER/2`) completion.
-- Enables **efficient peripheral communication** by offloading data transfer tasks from the CPU.
-
----
-
-# Memory Protection Unit (MPU)
-- Full support for **16 MPU regions**.
-- Ensures memory isolation and security.
+    - Partial support for some complex transfer types too (e.g. **scatter-gather**) but no implementation of SMLOE, DMLOE, BWC or other features.
+- On the real board, enables **efficient peripheral communication** by offloading data transfer tasks from the CPU.
+- **Documentation**: [eDMA definition](http://localhost:8000/nxps32k358__edma_8h.html), [TCD Definition](http://localhost:8000/nxps32k358__tcd_8h.html), [Implementation](http://localhost:8000/nxps32k358__edma_8c.html)
 
 ---
 
@@ -73,7 +80,7 @@ Developed as part of the **Computer Architectures and Operating Systems** course
   - UART: **Lpuart_Uart**
   - Interrupts: **IntCtrl_Ip**
   - OS: **FreeRTOS** package provided by NXP
-- **No need to modify** linker scripts, startup files or IDE generated code.
+- **No need to modify** linker scripts, startup files or IDE generated code, which means that the **existing codebase** can be used without any changes, provided that it leverages implemented peripherals and features only.
 
 
 ---
@@ -81,6 +88,7 @@ Developed as part of the **Computer Architectures and Operating Systems** course
 # Test Firmware
 
 - **Demo application** showcasing:
+  - **MPU support** (implicit, activated by defining `MPU_ENABLE`). 
   - **DMA and UART functionality**.
   - **Interrupt handling** for both DMA (explicit, showing an ISR implementation) and UART (implicit, managed by NXP's libraries).
   - **FreeRTOS scheduling**.
@@ -118,4 +126,4 @@ Developed as part of the **Computer Architectures and Operating Systems** course
 # Thank you!
 
 ### CAOS group 27
-Carlo Federico Vescovo, Claudia Sanna, Francesca Stella
+C. F. Vescovo, C. Sanna, F. Stella
